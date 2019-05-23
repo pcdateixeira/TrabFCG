@@ -179,6 +179,14 @@ glm::mat4 Matrix_Rotate(float angle, glm::vec4 axis)
     );
 }
 
+// Função que normaliza um vetor qualquer.
+glm::vec4 normalize(glm::vec4 u)
+{
+    u = u / norm(u);
+
+    return u;
+}
+
 // Produto vetorial entre dois vetores u e v definidos em um sistema de
 // coordenadas ortonormal.
 glm::vec4 crossproduct(glm::vec4 u, glm::vec4 v)

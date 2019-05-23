@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 // Headers das bibliotecas OpenGL
@@ -115,17 +116,28 @@ float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
-// "g_LeftMouseButtonPressed = true" se o usuário está com o botão esquerdo do mouse
-// pressionado no momento atual. Veja função MouseButtonCallback().
+// Variáveis que definem se certas teclas/botões estão sendo pressionados no momento atual
+// Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
+bool g_WKeyPressed = false;
+bool g_AKeyPressed = false;
+bool g_SKeyPressed = false;
+bool g_DKeyPressed = false;
 
-// Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
-// usuário através do mouse (veja função CursorPosCallback()). A posição
-// efetiva da câmera é calculada dentro da função main(), dentro do loop de
-// renderização.
+// Variáveis que definem onde a câmera está olhando em coordenadas esféricas, controladas pelo usuário através do mouse
+// (veja função CursorPosCallback()). A posição efetiva é calculada dentro da função main(), dentro do loop de renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
+
+// Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
+// Veja slides 172-182 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
+glm::vec4 g_CameraPosition  = glm::vec4(-2.0f,0.0f,0.0f,1.0f); // Ponto "c", centro da câmera
+glm::vec4 g_CameraLookAt    = glm::vec4(g_CameraPosition.x + g_CameraDistance*cos(g_CameraTheta), // Ponto "l", para onde a câmera está olhando
+                                        g_CameraPosition.y + g_CameraDistance*sin(g_CameraPhi),
+                                        g_CameraPosition.z + g_CameraDistance*sin(g_CameraTheta),1.0f);
+glm::vec4 g_CameraViewVector = g_CameraLookAt - g_CameraPosition; // Vetor "view", sentido para onde a câmera está virada
+glm::vec4 g_CameraUpVector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eixo Y global)
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
 bool g_UsePerspectiveProjection = true;
@@ -247,23 +259,31 @@ int main(int argc, char* argv[])
         // Pedimos para a GPU utilizar o programa de GPU criado acima (contendo os shaders de vértice e fragmentos).
         glUseProgram(program_id);
 
-        // Computamos a posição da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
+        // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
         float r = g_CameraDistance;
-        float y = r*sin(g_CameraPhi);
-        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+        float x = g_CameraPosition.x + r*cos(g_CameraTheta);
+        float y = g_CameraPosition.y + r*sin(g_CameraPhi);
+        float z = g_CameraPosition.z + r*sin(g_CameraTheta);
 
-        // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // Veja slides 172-182 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-        glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f); // Ponto "c", centro da câmera
-        glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eixo Y global)
+        g_CameraLookAt = glm::vec4(x,y,z,1.0f);
+        g_CameraViewVector = g_CameraLookAt - g_CameraPosition;
+
+        // Movimentação da câmera de acordo com as teclas sendo pressionadas no momento.
+        // Veja a função KeyCallback().
+        float cameraSpeed = 0.005f;
+        if (g_WKeyPressed)
+            g_CameraPosition += cameraSpeed * g_CameraViewVector;
+        if (g_AKeyPressed)
+            g_CameraPosition -= cameraSpeed * normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
+        if (g_SKeyPressed)
+            g_CameraPosition -= cameraSpeed * g_CameraViewVector;
+        if (g_DKeyPressed)
+            g_CameraPosition += cameraSpeed * normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para definir o sistema de coordenadas da câmera.
         // Veja slide 186 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        glm::mat4 view = Matrix_Camera_View(g_CameraPosition, g_CameraViewVector, g_CameraUpVector);
 
         // Agora computamos a matriz de projeção.
         glm::mat4 projection;
@@ -931,6 +951,27 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
     }
+
+    // As linhas de código abaixam detectam quando o usuário pressiona qualquer uma das teclas WASD do teclado, que então movimentam a câmera.
+    if (key == GLFW_KEY_W && action == GLFW_PRESS)
+        g_WKeyPressed = true;
+    if (key == GLFW_KEY_W && action == GLFW_RELEASE)
+        g_WKeyPressed = false;
+
+    if (key == GLFW_KEY_A && action == GLFW_PRESS)
+        g_AKeyPressed = true;
+    if (key == GLFW_KEY_A && action == GLFW_RELEASE)
+        g_AKeyPressed = false;
+
+    if (key == GLFW_KEY_S && action == GLFW_PRESS)
+        g_SKeyPressed = true;
+    if (key == GLFW_KEY_S && action == GLFW_RELEASE)
+        g_SKeyPressed = false;
+
+    if (key == GLFW_KEY_D && action == GLFW_PRESS)
+        g_DKeyPressed = true;
+    if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+        g_DKeyPressed = false;
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
