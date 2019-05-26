@@ -116,6 +116,8 @@ float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
+float PI = 3.141592f;
+
 // Variáveis que definem se certas teclas/botões estão sendo pressionados no momento atual
 // Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
@@ -127,15 +129,15 @@ bool g_DKeyPressed = false;
 // Variáveis que definem onde a câmera está olhando em coordenadas esféricas, controladas pelo usuário através do mouse
 // (veja função CursorPosCallback()). A posição efetiva é calculada dentro da função main(), dentro do loop de renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
+float g_CameraPhi = PI/2;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
 // Veja slides 172-182 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
-glm::vec4 g_CameraPosition  = glm::vec4(-2.0f,0.0f,0.0f,1.0f); // Ponto "c", centro da câmera
-glm::vec4 g_CameraLookAt    = glm::vec4(g_CameraPosition.x + g_CameraDistance*cos(g_CameraTheta), // Ponto "l", para onde a câmera está olhando
-                                        g_CameraPosition.y + g_CameraDistance*sin(g_CameraPhi),
-                                        g_CameraPosition.z + g_CameraDistance*sin(g_CameraTheta),1.0f);
+glm::vec4 g_CameraPosition  = glm::vec4(0.0f,0.0f,0.0f,1.0f); // Ponto "c", centro da câmera
+glm::vec4 g_CameraLookAt    = glm::vec4(g_CameraPosition.x + g_CameraDistance*sin(g_CameraPhi)*sin(g_CameraTheta), // Ponto "l", para onde a câmera está olhando
+                                        g_CameraPosition.y + g_CameraDistance*cos(g_CameraPhi),
+                                        g_CameraPosition.z + g_CameraDistance*sin(g_CameraPhi)*cos(g_CameraTheta),1.0f);
 glm::vec4 g_CameraViewVector = g_CameraLookAt - g_CameraPosition; // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 g_CameraUpVector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eixo Y global)
 
@@ -259,27 +261,48 @@ int main(int argc, char* argv[])
         // Pedimos para a GPU utilizar o programa de GPU criado acima (contendo os shaders de vértice e fragmentos).
         glUseProgram(program_id);
 
-        // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
-        // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
-        float r = g_CameraDistance;
-        float x = g_CameraPosition.x + r*cos(g_CameraTheta);
-        float y = g_CameraPosition.y + r*sin(g_CameraPhi);
-        float z = g_CameraPosition.z + r*sin(g_CameraTheta);
-
-        g_CameraLookAt = glm::vec4(x,y,z,1.0f);
-        g_CameraViewVector = g_CameraLookAt - g_CameraPosition;
-
         // Movimentação da câmera de acordo com as teclas sendo pressionadas no momento.
         // Veja a função KeyCallback().
         float cameraSpeed = 0.005f;
+        glm::vec4 cameraRightVector = normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
+
         if (g_WKeyPressed)
             g_CameraPosition += cameraSpeed * g_CameraViewVector;
         if (g_AKeyPressed)
-            g_CameraPosition -= cameraSpeed * normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
+            g_CameraPosition -= cameraSpeed * cameraRightVector;
         if (g_SKeyPressed)
             g_CameraPosition -= cameraSpeed * g_CameraViewVector;
         if (g_DKeyPressed)
-            g_CameraPosition += cameraSpeed * normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
+            g_CameraPosition += cameraSpeed * cameraRightVector;
+
+        // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
+        // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
+        float r = g_CameraDistance;
+        float x = g_CameraPosition.x + r*sin(g_CameraPhi)*sin(g_CameraTheta);
+        float z = g_CameraPosition.z + r*sin(g_CameraPhi)*cos(g_CameraTheta);
+        float y = g_CameraPosition.y + r*cos(g_CameraPhi);
+
+        g_CameraLookAt = glm::vec4(x,y,z,1.0f);
+
+        glm::vec4 oldViewVector = g_CameraViewVector;
+        g_CameraViewVector = g_CameraLookAt - g_CameraPosition;
+
+        if(glm::any(glm::notEqual(oldViewVector, g_CameraViewVector))) printf("<%f %f %f>, <%f %f %f>\n", oldViewVector.x, oldViewVector.y, oldViewVector.z, g_CameraViewVector.x, g_CameraViewVector.y, g_CameraViewVector.z);
+
+        if(glm::any(glm::notEqual(oldViewVector, g_CameraViewVector))) // Se houve uma mudança no vetor view
+        {
+            // Pega o ângulo entre o vetor view novo e antigo
+            float rotationAngle = acos(dotproduct(g_CameraViewVector, oldViewVector)/(norm(g_CameraViewVector)*norm(oldViewVector)));
+
+            PrintVector(oldViewVector);
+            PrintVector(g_CameraViewVector);
+            printf("u * v = %f, |u|*|v| = %f, theta = %f\n", dotproduct(g_CameraViewVector, oldViewVector), norm(g_CameraViewVector)*norm(oldViewVector), rotationAngle);
+            // Pega o eixo de rotação usado para mover o vetor view
+            glm::vec4 rotationAxis = normalize(crossproduct(g_CameraViewVector, oldViewVector));
+
+            // E rotaciona o vetor up em relação ao mesmo eixo e no mesmo ângulo
+            g_CameraUpVector = g_CameraUpVector * Matrix_Rotate(rotationAngle, rotationAxis);
+        }
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para definir o sistema de coordenadas da câmera.
         // Veja slide 186 do documento "Aula_08_Sistemas_de_Coordenadas.pdf".
@@ -314,6 +337,7 @@ int main(int argc, char* argv[])
         }
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
+        PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Enviamos as matrizes "view" e "projection" para a placa de vídeo (GPU).
         // Veja o arquivo "shader_vertex.glsl", onde estas são efetivamente aplicadas em todos os pontos.
@@ -326,6 +350,20 @@ int main(int argc, char* argv[])
         model = Matrix_Rotate_Z(g_AngleZ)
               * Matrix_Rotate_Y(g_AngleY)
               * Matrix_Rotate_X(g_AngleX);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, BUNNY);
+        DrawVirtualObject("bunny");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+
+        // Desenhamos outro modelo do coelho
+        model = model
+                * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z)
+                * Matrix_Scale(0.05f, 0.05f, 0.05f);
+
+        glm::vec4 direction = normalize(g_CameraViewVector);
+
+        model = model * Matrix_Translate(direction.x*4, direction.y*4, direction.z*4);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, BUNNY);
         DrawVirtualObject("bunny");
@@ -844,9 +882,10 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         g_CameraTheta -= 0.01f*dx;
         g_CameraPhi   += 0.01f*dy;
 
-        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
-        float phimin = -phimax;
+        // Em coordenadas esféricas, o ângulo phi deve ficar entre 0 e +pi.
+        // HACK PARA EVITAR DIVISAO POR ZERO
+        float phimax = 31*PI/32;
+        float phimin = 0.2f;
         if (g_CameraPhi > phimax)
             g_CameraPhi = phimax;
 

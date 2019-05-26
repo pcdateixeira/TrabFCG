@@ -633,7 +633,7 @@
 	<fstream>
 	<sstream>
 
-1558644024 source:c:\users\pedro\documents\github\trabfcg\src\main.cpp
+1558694381 source:c:\users\pedro\documents\github\trabfcg\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
@@ -641,11 +641,9 @@
 	<stack>
 	<string>
 	<vector>
-	<limits>
 	<fstream>
 	<sstream>
 	<stdexcept>
-	<algorithm>
 	<glad/glad.h>
 	<GLFW/glfw3.h>
 	<glm/mat4x4.hpp>
@@ -914,7 +912,7 @@
 1557922189 c:\users\pedro\documents\github\trabfcg\include\glm\gtc\type_ptr.inl
 	<cstring>
 
-1557922189 c:\users\pedro\documents\github\trabfcg\include\matrices.h
+1558695336 c:\users\pedro\documents\github\trabfcg\include\matrices.h
 	<cstdio>
 	<cstdlib>
 	<glm/mat4x4.hpp>

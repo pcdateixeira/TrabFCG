@@ -238,6 +238,7 @@ glm::mat4 Matrix_Camera_View(glm::vec4 position_c, glm::vec4 view_vector, glm::v
     w = w / norm(w);
     u = u / norm(u);
 
+
     glm::vec4 v = crossproduct(w,u);
 
     glm::vec4 origin_o = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
