@@ -117,6 +117,7 @@ float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
 float PI = 3.141592f;
+float EPSILON = 0.01f;
 
 // Variáveis que definem se certas teclas/botões estão sendo pressionados no momento atual
 // Veja função MouseButtonCallback().
@@ -285,18 +286,19 @@ int main(int argc, char* argv[])
         g_CameraLookAt = glm::vec4(x,y,z,1.0f);
 
         glm::vec4 oldViewVector = g_CameraViewVector;
-        g_CameraViewVector = g_CameraLookAt - g_CameraPosition;
+        g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
 
-        if(glm::any(glm::notEqual(oldViewVector, g_CameraViewVector))) printf("<%f %f %f>, <%f %f %f>\n", oldViewVector.x, oldViewVector.y, oldViewVector.z, g_CameraViewVector.x, g_CameraViewVector.y, g_CameraViewVector.z);
+        //if(notEqual(oldViewVector, g_CameraViewVector, EPSILON)) printf("<%f %f %f>, <%f %f %f>\n", oldViewVector.x, oldViewVector.y, oldViewVector.z, g_CameraViewVector.x, g_CameraViewVector.y, g_CameraViewVector.z);
 
-        if(glm::any(glm::notEqual(oldViewVector, g_CameraViewVector))) // Se houve uma mudança no vetor view
+        if(notEqual(oldViewVector, g_CameraViewVector, EPSILON)) // Se houve uma mudança no vetor view
         {
             // Pega o ângulo entre o vetor view novo e antigo
             float rotationAngle = acos(dotproduct(g_CameraViewVector, oldViewVector)/(norm(g_CameraViewVector)*norm(oldViewVector)));
 
-            PrintVector(oldViewVector);
-            PrintVector(g_CameraViewVector);
-            printf("u * v = %f, |u|*|v| = %f, theta = %f\n", dotproduct(g_CameraViewVector, oldViewVector), norm(g_CameraViewVector)*norm(oldViewVector), rotationAngle);
+            //PrintVector(oldViewVector);
+            //PrintVector(g_CameraViewVector);
+            //printf("u * v = %f, |u|*|v| = %f, theta = %f\n", dotproduct(g_CameraViewVector, oldViewVector), norm(g_CameraViewVector)*norm(oldViewVector), rotationAngle);
+            //PrintVector(g_CameraUpVector);
             // Pega o eixo de rotação usado para mover o vetor view
             glm::vec4 rotationAxis = normalize(crossproduct(g_CameraViewVector, oldViewVector));
 

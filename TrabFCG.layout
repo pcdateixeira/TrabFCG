@@ -2,9 +2,26 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
+	<File name="src\main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="-1" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="14518" topLine="206" />
+		</Cursor>
+	</File>
 	<File name="include\matrices.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="7738" topLine="334" />
+			<Cursor1 position="7280" topLine="206" />
+		</Cursor>
+		<Folding>
+			<Collapse line="211" />
+			<Collapse line="240" />
+			<Collapse line="273" />
+			<Collapse line="286" />
+			<Collapse line="341" />
+		</Folding>
+	</File>
+	<File name="src\textrendering.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7135" topLine="194" />
 		</Cursor>
 	</File>
 	<File name="src\glad.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -12,14 +29,9 @@
 			<Cursor1 position="4158" topLine="173" />
 		</Cursor>
 	</File>
-	<File name="src\textrendering.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\utils.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="7135" topLine="245" />
-		</Cursor>
-	</File>
-	<File name="src\shader_vertex.glsl" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="2210" topLine="0" />
+			<Cursor1 position="770" topLine="3" />
 		</Cursor>
 	</File>
 	<File name="src\shader_fragment.glsl" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
@@ -27,14 +39,9 @@
 			<Cursor1 position="2898" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include\utils.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\shader_vertex.glsl" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="2" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="770" topLine="3" />
-		</Cursor>
-	</File>
-	<File name="src\main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="-1" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="14012" topLine="276" />
+			<Cursor1 position="2210" topLine="0" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

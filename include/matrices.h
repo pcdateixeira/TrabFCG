@@ -228,6 +228,14 @@ float dotproduct(glm::vec4 u, glm::vec4 v)
     return u1*v1 + u2*v2 + u3*v3;
 }
 
+bool notEqual(glm::vec4 u, glm::vec4 v, float epsilon)
+{
+    if (abs(u.x - v.x) > epsilon || abs(u.y - v.y) > epsilon || abs(u.z - v.z) > epsilon)
+        return true;
+    else
+        return false;
+}
+
 // Matriz de mudança de coordenadas para o sistema de coordenadas da Câmera.
 glm::mat4 Matrix_Camera_View(glm::vec4 position_c, glm::vec4 view_vector, glm::vec4 up_vector)
 {
