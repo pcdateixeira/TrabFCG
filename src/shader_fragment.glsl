@@ -7,6 +7,12 @@
 in vec4 position_world;
 in vec4 normal;
 
+// Posição do vértice atual no sistema de coordenadas local do modelo.
+in vec4 position_model;
+
+// Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
+in vec2 texcoords;
+
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
@@ -14,7 +20,18 @@ uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
 #define BUNNY  0
+#define SHIP 1
+
 uniform int object_id;
+
+// Parâmetros da axis-aligned bounding box (AABB) do modelo
+uniform vec4 bbox_min;
+uniform vec4 bbox_max;
+
+// Variáveis para acesso das imagens de textura
+uniform sampler2D TextureImage0;
+uniform sampler2D TextureImage1;
+uniform sampler2D TextureImage2;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -46,6 +63,10 @@ void main()
     // Vetor que define o sentido da reflexão especular ideal.
     vec4 r = -l + 2*n*dot(n,l);
 
+    // Coordenadas de textura U e V
+    float U = 0.0;
+    float V = 0.0;
+
     // Parâmetros que definem as propriedades espectrais da superfície
     vec3 Kd; // Refletância difusa
     vec3 Ks; // Refletância especular
@@ -59,6 +80,13 @@ void main()
         Ks = vec3(0.8,0.8,0.8);
         Ka = Kd/2;
         q = 32.0;
+    }
+    else if ( object_id == SHIP )
+    {
+        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        U = texcoords.x;
+        V = texcoords.y;
+        Kd = texture(TextureImage2, vec2(U,V)).rgb;
     }
     else // Objeto desconhecido = preto
     {
@@ -85,7 +113,12 @@ void main()
 
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 133 do documento "Aula_17_e_18_Modelos_de_Iluminacao.pdf".
+    if ( object_id == SHIP ){
+        color = lambert_diffuse_term;
+    }
+    else {
     color = lambert_diffuse_term + ambient_term + phong_specular_term;
+    }
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

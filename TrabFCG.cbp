@@ -335,6 +335,7 @@
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/shader_fragment.glsl" />
 		<Unit filename="src/shader_vertex.glsl" />
+		<Unit filename="src/stb_image.cpp" />
 		<Unit filename="src/textrendering.cpp" />
 		<Unit filename="src/tiny_obj_loader.cpp" />
 		<Extensions>

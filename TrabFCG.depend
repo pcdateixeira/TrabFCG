@@ -633,7 +633,7 @@
 	<fstream>
 	<sstream>
 
-1561232362 source:c:\users\pedro\documents\github\trabfcg\src\main.cpp
+1561243422 source:c:\users\pedro\documents\github\trabfcg\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
@@ -650,6 +650,7 @@
 	<glm/vec4.hpp>
 	<glm/gtc/type_ptr.hpp>
 	<tiny_obj_loader.h>
+	<stb_image.h>
 	"utils.h"
 	"matrices.h"
 
@@ -918,4 +919,23 @@
 	<glm/mat4x4.hpp>
 	<glm/vec4.hpp>
 	<glm/gtc/matrix_transform.hpp>
+
+1559044482 c:\users\pedro\documents\github\trabfcg\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1559044482 source:c:\users\pedro\documents\github\trabfcg\src\stb_image.cpp
+	"stb_image.h"
 
