@@ -316,8 +316,6 @@ int main(int argc, char* argv[])
         glm::vec4 oldViewVector = g_CameraViewVector;
         g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
 
-        //if(notEqual(oldViewVector, g_CameraViewVector, EPSILON)) printf("<%f %f %f>, <%f %f %f>\n", oldViewVector.x, oldViewVector.y, oldViewVector.z, g_CameraViewVector.x, g_CameraViewVector.y, g_CameraViewVector.z);
-
         if(notEqual(oldViewVector, g_CameraViewVector, EPSILON)) // Se houve uma mudança no vetor view
         {
             // Pega o ângulo entre o vetor view novo e antigo
@@ -388,8 +386,8 @@ int main(int argc, char* argv[])
               * Matrix_Rotate_Y(g_AngleY)
               * Matrix_Rotate_X(g_AngleX);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, SHIP);
-        DrawVirtualObject("ship");
+        glUniform1i(object_id_uniform, BUNNY);
+        DrawVirtualObject("bunny");
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
@@ -458,16 +456,20 @@ int main(int argc, char* argv[])
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
 
         // Desenhamos o modelo do personagem
-        model = model
-                * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z)
-                * Matrix_Scale(0.05f, 0.05f, 0.05f);
-
         glm::vec4 direction = normalize(g_CameraViewVector);
+        glm::vec4 downVector = normalize(-g_CameraUpVector);
 
-        model = model * Matrix_Translate(direction.x*4, direction.y*4, direction.z*4);
+        model = model
+              * Matrix_Translate(downVector.x/20, downVector.y/20, downVector.z/20) // Coloca a nave um pouco abaixo da câmera
+              * Matrix_Translate(direction.x/6, direction.y/6, direction.z/6) // Coloca a nave um pouco à frente da câmera
+              * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z) // Traz a nave para a posição da câmera
+              * Matrix_Scale(0.01f, 0.01f, 0.01f); // Reduz o tamanho do modelo da nave
+
+
+        //model = model * Matrix_Translate(direction.x*15, direction.y*15, direction.z*15);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUNNY);
-        DrawVirtualObject("bunny");
+        glUniform1i(object_id_uniform, SHIP);
+        DrawVirtualObject("ship");
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o passamos por todos os sistemas de coordenadas armazenados nas
         // matrizes the_model, the_view, e the_projection; e escrevemos na tela as matrizes e pontos resultantes dessas transformações.
