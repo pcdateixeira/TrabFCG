@@ -403,7 +403,7 @@ int main(int argc, char* argv[])
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(-35.0f,-50.0f,-270.0f)
+        model = Matrix_Translate(-35.0f,-50.0f,-240.0f)
               * Matrix_Rotate_Y(2.3f)
               * Matrix_Scale(30.00f, 30.00f, 30.00f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -1295,22 +1295,23 @@ void ErrorCallback(int error, const char* description)
 glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     // Impede que o usuário chegue próximo dos 6 planos que compõem a skybox
     if( cameraPosition.x > 250.0f )
-        cameraPosition.x = 250.0f;
+        cameraPosition.x = 240.0f;
     if( cameraPosition.x < -250.0f )
-        cameraPosition.x = -250.0f;
+        cameraPosition.x = -240.0f;
     if( cameraPosition.y > 250.0f )
-        cameraPosition.y = 250.0f;
+        cameraPosition.y = 240.0f;
     if( cameraPosition.y < -250.0f )
-        cameraPosition.y = -250.0f;
+        cameraPosition.y = -240.0f;
     if( cameraPosition.z > 250.0f )
-        cameraPosition.z = 250.0f;
+        cameraPosition.z = 240.0f;
     if( cameraPosition.z < -250.0f )
-        cameraPosition.z = -250.0f;
+        cameraPosition.z = -240.0f;
 
     // Impede que o usuário entre em qualquer um dos dois planetas na cena
     glm::vec3 bbox_minSphere = g_VirtualScene["sphere"].bbox_min;
     glm::vec3 bbox_maxSphere = g_VirtualScene["sphere"].bbox_max;
 
+    // ------- Planeta 1
     float radiusBigPlanet = 200.0f; // Porque o planeta grande foi escalado 200 vezes
     glm::vec4 bbox_centerBigPlanet = glm::vec4((radiusBigPlanet * bbox_minSphere) + (radiusBigPlanet * bbox_maxSphere), 1.0f);
     bbox_centerBigPlanet.y = bbox_centerBigPlanet.y - 250.0f; // E movido 250 unidades para baixo no eixo y
@@ -1323,6 +1324,7 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
         cameraPosition = cameraPosition + pushCamera;
     }
 
+    // ------- Planeta 2
     float radiusSmallPlanet = 10.0f; // Porque o planeta pequeno foi escalado 10 vezes
     glm::vec4 bbox_centerSmallPlanet = glm::vec4((radiusSmallPlanet * bbox_minSphere) + (radiusSmallPlanet * bbox_maxSphere), 1.0f);
     bbox_centerSmallPlanet.y = bbox_centerSmallPlanet.y + 170.0f; // E movido 170 unidades para cima no eixo y
@@ -1334,6 +1336,115 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
         pushCamera.w = 0.0f;
         pushCamera = normalize(pushCamera) * 3.0f;
         cameraPosition = cameraPosition + pushCamera;
+    }
+
+    // Impede que o usuário entre em qualquer um dos asteroides na cena
+    glm::vec3 bbox_minAsteroid = g_VirtualScene["asteroid"].bbox_min;
+    glm::vec3 bbox_maxAsteroid = g_VirtualScene["asteroid"].bbox_max;
+
+    // ------- Asteroide 1
+    glm::vec4 bbox_minFirstAsteroid = Matrix_Translate(-100.0f,100.0f,0.0f)
+                                    * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxFirstAsteroid = Matrix_Translate(-100.0f,100.0f,0.0f)
+                                    * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( cameraPosition.x >= bbox_minFirstAsteroid.x && cameraPosition.x <= bbox_maxFirstAsteroid.x &&
+        cameraPosition.y >= bbox_minFirstAsteroid.y && cameraPosition.y <= bbox_maxFirstAsteroid.y &&
+        cameraPosition.z >= bbox_minFirstAsteroid.z && cameraPosition.z <= bbox_maxFirstAsteroid.z)
+    {
+            glm::vec4 bbox_centerFirstAsteroid = glm::vec4((bbox_minFirstAsteroid.x + bbox_maxFirstAsteroid.x)/2.0f,
+                                                           (bbox_minFirstAsteroid.y + bbox_maxFirstAsteroid.y)/2.0f,
+                                                           (bbox_minFirstAsteroid.z + bbox_maxFirstAsteroid.z)/2.0f,
+                                                           1.0f);
+
+            glm::vec4 pushCamera = cameraPosition - bbox_centerFirstAsteroid; // Cria o vetor que vai empurrar a câmera para longe do asteroide
+            pushCamera = normalize(pushCamera) * 10.0f;
+            cameraPosition = cameraPosition + pushCamera;
+    }
+
+    // ------- Asteroide 2
+    glm::vec4 bbox_minSecondAsteroid = Matrix_Translate(-35.0f,-50.0f,-240.0f)
+                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxSecondAsteroid = Matrix_Translate(-35.0f,-50.0f,-240.0f)
+                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( cameraPosition.x >= bbox_minSecondAsteroid.x && cameraPosition.x <= bbox_maxSecondAsteroid.x &&
+        cameraPosition.y >= bbox_minSecondAsteroid.y && cameraPosition.y <= bbox_maxSecondAsteroid.y &&
+        cameraPosition.z >= bbox_minSecondAsteroid.z && cameraPosition.z <= bbox_maxSecondAsteroid.z)
+    {
+            glm::vec4 bbox_centerSecondAsteroid = glm::vec4((bbox_minSecondAsteroid.x + bbox_maxSecondAsteroid.x)/2.0f,
+                                                           (bbox_minSecondAsteroid.y + bbox_maxSecondAsteroid.y)/2.0f,
+                                                           (bbox_minSecondAsteroid.z + bbox_maxSecondAsteroid.z)/2.0f,
+                                                           1.0f);
+
+            glm::vec4 pushCamera = cameraPosition - bbox_centerSecondAsteroid; // Cria o vetor que vai empurrar a câmera para longe do asteroide
+            pushCamera = normalize(pushCamera) * 10.0f;
+            cameraPosition = cameraPosition + pushCamera;
+    }
+
+    // ------- Asteroide 3
+    glm::vec4 bbox_minThirdAsteroid = Matrix_Translate(225.0f,0.0f,180.0f)
+                                    * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxThirdAsteroid = Matrix_Translate(225.0f,0.0f,180.0f)
+                                    * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( cameraPosition.x >= bbox_minThirdAsteroid.x && cameraPosition.x <= bbox_maxThirdAsteroid.x &&
+        cameraPosition.y >= bbox_minThirdAsteroid.y && cameraPosition.y <= bbox_maxThirdAsteroid.y &&
+        cameraPosition.z >= bbox_minThirdAsteroid.z && cameraPosition.z <= bbox_maxThirdAsteroid.z)
+    {
+            glm::vec4 bbox_centerThirdAsteroid = glm::vec4((bbox_minThirdAsteroid.x + bbox_maxThirdAsteroid.x)/2.0f,
+                                                           (bbox_minThirdAsteroid.y + bbox_maxThirdAsteroid.y)/2.0f,
+                                                           (bbox_minThirdAsteroid.z + bbox_maxThirdAsteroid.z)/2.0f,
+                                                           1.0f);
+
+            glm::vec4 pushCamera = cameraPosition - bbox_centerThirdAsteroid; // Cria o vetor que vai empurrar a câmera para longe do asteroide
+            pushCamera = normalize(pushCamera) * 10.0f;
+            cameraPosition = cameraPosition + pushCamera;
+    }
+
+    // ------- Asteroide 4
+    glm::vec4 bbox_minFourthAsteroid = Matrix_Translate(43.0f,89.0f,-25.0f)
+                                    * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxFourthAsteroid = Matrix_Translate(43.0f,89.0f,-25.0f)
+                                    * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( cameraPosition.x >= bbox_minFourthAsteroid.x && cameraPosition.x <= bbox_maxFourthAsteroid.x &&
+        cameraPosition.y >= bbox_minFourthAsteroid.y && cameraPosition.y <= bbox_maxFourthAsteroid.y &&
+        cameraPosition.z >= bbox_minFourthAsteroid.z && cameraPosition.z <= bbox_maxFourthAsteroid.z)
+    {
+            glm::vec4 bbox_centerFourthAsteroid = glm::vec4((bbox_minFourthAsteroid.x + bbox_maxFourthAsteroid.x)/2.0f,
+                                                           (bbox_minFourthAsteroid.y + bbox_maxFourthAsteroid.y)/2.0f,
+                                                           (bbox_minFourthAsteroid.z + bbox_maxFourthAsteroid.z)/2.0f,
+                                                           1.0f);
+
+            glm::vec4 pushCamera = cameraPosition - bbox_centerFourthAsteroid; // Cria o vetor que vai empurrar a câmera para longe do asteroide
+            pushCamera = normalize(pushCamera) * 10.0f;
+            cameraPosition = cameraPosition + pushCamera;
+    }
+
+    // ------- Asteroide 5
+    glm::vec4 bbox_minFifthAsteroid = Matrix_Translate(-130.0f,-150.0f,230.0f)
+                                    * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxFifthAsteroid = Matrix_Translate(-130.0f,-150.0f,230.0f)
+                                    * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( cameraPosition.x >= bbox_minFifthAsteroid.x && cameraPosition.x <= bbox_maxFifthAsteroid.x &&
+        cameraPosition.y >= bbox_minFifthAsteroid.y && cameraPosition.y <= bbox_maxFifthAsteroid.y &&
+        cameraPosition.z >= bbox_minFifthAsteroid.z && cameraPosition.z <= bbox_maxFifthAsteroid.z)
+    {
+            glm::vec4 bbox_centerFifthAsteroid = glm::vec4((bbox_minFifthAsteroid.x + bbox_maxFifthAsteroid.x)/2.0f,
+                                                           (bbox_minFifthAsteroid.y + bbox_maxFifthAsteroid.y)/2.0f,
+                                                           (bbox_minFifthAsteroid.z + bbox_maxFifthAsteroid.z)/2.0f,
+                                                           1.0f);
+
+            glm::vec4 pushCamera = cameraPosition - bbox_centerFifthAsteroid; // Cria o vetor que vai empurrar a câmera para longe do asteroide
+            pushCamera = normalize(pushCamera) * 10.0f;
+            cameraPosition = cameraPosition + pushCamera;
     }
 
     return cameraPosition;
