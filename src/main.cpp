@@ -232,8 +232,13 @@ int main(int argc, char* argv[])
 
     // Carregamos imagens para serem utilizadas como textura
     LoadTextureImage("../../data/ship.jpg"); // TextureImage0
-    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage1
-    LoadTextureImage("../../data/ship.jpg"); // TextureImage2
+    LoadTextureImage("../../data/ship.jpg"); // TextureImage1
+    LoadTextureImage("../../data/Down_1K_TEX.png"); // TextureImage2
+    LoadTextureImage("../../data/Up_1K_TEX.png"); // TextureImage3
+    LoadTextureImage("../../data/Front_1K_TEX.png"); // TextureImage4
+    LoadTextureImage("../../data/Back_1K_TEX.png"); // TextureImage5
+    LoadTextureImage("../../data/Left_1K_TEX.png"); // TextureImage6
+    LoadTextureImage("../../data/Right_1K_TEX.png"); // TextureImage7
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel bunnymodel("../../data/bunny.obj");
@@ -243,6 +248,10 @@ int main(int argc, char* argv[])
     ObjModel shipmodel("../../data/ship.obj");
     ComputeNormals(&shipmodel);
     BuildTrianglesAndAddToVirtualScene(&shipmodel);
+
+    ObjModel planemodel("../../data/plane.obj");
+    ComputeNormals(&planemodel);
+    BuildTrianglesAndAddToVirtualScene(&planemodel);
 
     if ( argc > 1 )
     {
@@ -335,7 +344,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far estão no sentido negativo!
         // Veja slides 190-193 do documento "Aula_09_Projecoes.pdf".
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -30.0f; // Posição do "far plane"
+        float farplane  = -800.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -367,8 +376,14 @@ int main(int argc, char* argv[])
 
         #define BUNNY  0
         #define SHIP   1
+        #define SKYBOX_BOTTOM 2
+        #define SKYBOX_TOP 3
+        #define SKYBOX_FRONT 4
+        #define SKYBOX_BACK 5
+        #define SKYBOX_LEFT 6
+        #define SKYBOX_RIGHT 7
 
-        // Desenhamos o modelo do coelho
+        // Desenhamos o modelo da nave
         model = Matrix_Rotate_Z(g_AngleZ)
               * Matrix_Rotate_Y(g_AngleY)
               * Matrix_Rotate_X(g_AngleX);
@@ -377,8 +392,72 @@ int main(int argc, char* argv[])
         DrawVirtualObject("ship");
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        // Desenhamos outro modelo do coelho
+        // Desenhamos o modelo do chão da skybox
+        model = Matrix_Translate(0.0f, -300.0f, 0.0f)
+              * Matrix_Rotate_Y(PI/2);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKYBOX_BOTTOM);
+        DrawVirtualObject("plane");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo do teto da skybox
+        model = Matrix_Translate(0.0f, 300.0f, 0.0f)
+              * Matrix_Rotate_Z(PI)
+              * Matrix_Rotate_Y(PI/2);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKYBOX_TOP);
+        DrawVirtualObject("plane");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo da parede da frente da skybox
+        model = Matrix_Translate(300.0f, 0.0f, 0.0f)
+              * Matrix_Rotate_Z(PI/2)
+              * Matrix_Rotate_Y(PI/2);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKYBOX_FRONT);
+        DrawVirtualObject("plane");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo da parede de trás da skybox
+        model = Matrix_Translate(-300.0f, 0.0f, 0.0f)
+              * Matrix_Rotate_Z(3*PI/2)
+              * Matrix_Rotate_Y(3*PI/2);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKYBOX_BACK);
+        DrawVirtualObject("plane");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo da parede da esquerda da skybox
+        model = Matrix_Translate(0.0f, 0.0f, -300.0f)
+              * Matrix_Rotate_X(PI/2)
+              * Matrix_Rotate_Y(PI);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKYBOX_LEFT);
+        DrawVirtualObject("plane");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo da parede da direita da skybox
+        model = Matrix_Translate(0.0f, 0.0f, 300.0f)
+              * Matrix_Rotate_X(3*PI/2);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SKYBOX_RIGHT);
+        DrawVirtualObject("plane");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+
+        // Desenhamos o modelo do personagem
         model = model
                 * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z)
                 * Matrix_Scale(0.05f, 0.05f, 0.05f);
@@ -540,6 +619,11 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage4"), 4);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), 5);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
     glUseProgram(0);
 }
 
