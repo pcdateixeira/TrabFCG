@@ -236,6 +236,12 @@ bool notEqual(glm::vec4 u, glm::vec4 v, float epsilon)
         return false;
 }
 
+float distanceBetweenPoints(glm::vec4 p, glm::vec4 q)
+{
+    float distance = sqrt( pow(q.x - p.x, 2.0f) + pow(q.y - p.y, 2.0f) + pow(q.z - p.z, 2.0f) );
+    return distance;
+}
+
 // Matriz de mudança de coordenadas para o sistema de coordenadas da Câmera.
 glm::mat4 Matrix_Camera_View(glm::vec4 position_c, glm::vec4 view_vector, glm::vec4 up_vector)
 {

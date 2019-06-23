@@ -13,13 +13,16 @@ in vec4 position_model;
 // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
 
+// Cor calculada no vértice do polígono
+in vec3 color_v;
+
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
-#define BUNNY  0
+#define SPHERE  0
 #define SHIP 1
 #define SKYBOX_BOTTOM 2
 #define SKYBOX_TOP 3
@@ -27,6 +30,8 @@ uniform mat4 projection;
 #define SKYBOX_BACK 5
 #define SKYBOX_LEFT 6
 #define SKYBOX_RIGHT 7
+#define TROPICAL 8
+#define ASTEROID 9
 
 uniform int object_id;
 
@@ -43,9 +48,15 @@ uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
+uniform sampler2D TextureImage8;
+uniform sampler2D TextureImage9;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
+
+// Constantes
+#define M_PI   3.14159265358979323846
+#define M_PI_2 1.57079632679489661923
 
 void main()
 {
@@ -78,6 +89,9 @@ void main()
             color = texture(TextureImage7, vec2(U,V)).rgb;
         }
     }
+    else if (object_id == ASTEROID) {
+        color = color_v;
+    }
     else {
 
         // Obtemos a posição da câmera utilizando a inversa da matriz que define o
@@ -105,19 +119,44 @@ void main()
         // Vetor que define o sentido da reflexão especular ideal.
         vec4 r = -l + 2*n*dot(n,l);
 
+        // Vetor que define o meio do caminho entre v e l, para o modelo de iluminação Blinn-Phong
+        vec4 h = (v + l)/length(v + l);
+
         // Parâmetros que definem as propriedades espectrais da superfície
         vec3 Kd; // Refletância difusa
         vec3 Ks; // Refletância especular
         vec3 Ka; // Refletância ambiente
         float q; // Expoente especular para o modelo de iluminação de Phong
 
-        if ( object_id == BUNNY )
+        if ( object_id == SPHERE )
         {
-            // Propriedades espectrais do coelho
-            Kd = vec3(0.08,0.4,0.8);
-            Ks = vec3(0.8,0.8,0.8);
-            Ka = Kd/2;
-            q = 32.0;
+            float ro = sqrt(pow(position_model.x,2.0f) + pow(position_model.y,2.0f) + pow(position_model.z,2.0f));
+            float theta = atan(position_model.x, position_model.z);
+            float phi = asin(position_model.y/ro);
+
+            U = (theta + M_PI)/(2*M_PI);
+            V = (phi + M_PI_2)/M_PI;
+
+            // Propriedades espectrais do planeta
+            Kd = texture(TextureImage8, vec2(U,V)).rgb;
+            Ks = vec3(0.0,0.0,0.0);
+            Ka = Ks;
+            q = 1.0;
+        }
+        else if ( object_id == TROPICAL )
+        {
+            float ro = sqrt(pow(position_model.x,2.0f) + pow(position_model.y,2.0f) + pow(position_model.z,2.0f));
+            float theta = atan(position_model.x, position_model.z);
+            float phi = asin(position_model.y/ro);
+
+            U = (theta + M_PI)/(2*M_PI);
+            V = (phi + M_PI_2)/M_PI;
+
+            // Propriedades espectrais do planeta
+            Kd = texture(TextureImage9, vec2(U,V)).rgb;
+            Ks = vec3(0.0,0.0,0.0);
+            Ka = Ks;
+            q = 1.0;
         }
         else if ( object_id == SHIP )
         {
@@ -125,12 +164,15 @@ void main()
             U = texcoords.x;
             V = texcoords.y;
             Kd = texture(TextureImage1, vec2(U,V)).rgb;
-        }
-        else // Objeto desconhecido = preto
-        {
-            Kd = vec3(0.0,0.0,0.0);
             Ks = vec3(0.0,0.0,0.0);
             Ka = vec3(0.0,0.0,0.0);
+            q = 1.0;
+        }
+        else // Objeto desconhecido = branco
+        {
+            Kd = vec3(1.0,1.0,1.0);
+            Ks = vec3(1.0,1.0,1.0);
+            Ka = vec3(1.0,1.0,1.0);
             q = 1.0;
         }
 
@@ -147,16 +189,14 @@ void main()
         vec3 ambient_term = Ka * Ia;
 
         // Termo especular utilizando o modelo de iluminação de Phong
-        vec3 phong_specular_term = Ks * I * max(0, pow(dot(r,v),q));
+        //vec3 phong_specular_term = Ks * I * max(0, pow(dot(r,v),q));
+
+        // Termo especular utilizando o modelo de iluminação de Blinn-Phong
+        vec3 phong_specular_term = Ks * I * max(0, pow(dot(n,h),q));
 
         // Cor final do fragmento calculada com uma combinação dos termos difuso,
         // especular, e ambiente. Veja slide 133 do documento "Aula_17_e_18_Modelos_de_Iluminacao.pdf".
-        if ( object_id == SHIP ){
-            color = lambert_diffuse_term;
-        }
-        else {
-            color = lambert_diffuse_term + ambient_term + phong_specular_term;
-        }
+        color = lambert_diffuse_term + ambient_term + phong_specular_term;
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.

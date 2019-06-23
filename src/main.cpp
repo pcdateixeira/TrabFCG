@@ -89,6 +89,8 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+glm::vec4 checkIntersection(glm::vec4 cameraPosition);
+
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject
@@ -239,11 +241,13 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/Back_1K_TEX.png"); // TextureImage5
     LoadTextureImage("../../data/Left_1K_TEX.png"); // TextureImage6
     LoadTextureImage("../../data/Right_1K_TEX.png"); // TextureImage7
+    LoadTextureImage("../../data/2k_ceres_fictional.jpg"); // TextureImage8
+    LoadTextureImage("../../data/Tropical.png"); // TextureImage8
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
+    ObjModel spheremodel("../../data/sphere.obj");
+    ComputeNormals(&spheremodel);
+    BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
     ObjModel shipmodel("../../data/ship.obj");
     ComputeNormals(&shipmodel);
@@ -252,6 +256,10 @@ int main(int argc, char* argv[])
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel asteroidmodel("../../data/asteroid.obj");
+    ComputeNormals(&asteroidmodel);
+    BuildTrianglesAndAddToVirtualScene(&asteroidmodel);
 
     if ( argc > 1 )
     {
@@ -292,7 +300,7 @@ int main(int argc, char* argv[])
 
         // Movimentação da câmera de acordo com as teclas sendo pressionadas no momento.
         // Veja a função KeyCallback().
-        float cameraSpeed = 0.005f;
+        float cameraSpeed = 0.05f;
         glm::vec4 cameraRightVector = normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
 
         if (g_WKeyPressed)
@@ -303,6 +311,8 @@ int main(int argc, char* argv[])
             g_CameraPosition -= cameraSpeed * g_CameraViewVector;
         if (g_DKeyPressed)
             g_CameraPosition += cameraSpeed * cameraRightVector;
+
+        g_CameraPosition = checkIntersection(g_CameraPosition); //check for intersection here
 
         // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
         // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
@@ -372,7 +382,7 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
 
-        #define BUNNY  0
+        #define SPHERE  0
         #define SHIP   1
         #define SKYBOX_BOTTOM 2
         #define SKYBOX_TOP 3
@@ -380,14 +390,79 @@ int main(int argc, char* argv[])
         #define SKYBOX_BACK 5
         #define SKYBOX_LEFT 6
         #define SKYBOX_RIGHT 7
+        #define TROPICAL 8
+        #define ASTEROID 9
 
-        // Desenhamos o modelo da nave
-        model = Matrix_Rotate_Z(g_AngleZ)
-              * Matrix_Rotate_Y(g_AngleY)
-              * Matrix_Rotate_X(g_AngleX);
+        // Desenhamos alguns asteroides
+        model = Matrix_Translate(-100.0f,100.0f,0.0f)
+              * Matrix_Scale(30.00f, 30.00f, 20.00f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUNNY);
-        DrawVirtualObject("bunny");
+        glUniform1i(object_id_uniform, ASTEROID);
+        DrawVirtualObject("asteroid");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        model = Matrix_Translate(-35.0f,-50.0f,-270.0f)
+              * Matrix_Rotate_Y(2.3f)
+              * Matrix_Scale(30.00f, 30.00f, 30.00f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, ASTEROID);
+        DrawVirtualObject("asteroid");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        model = Matrix_Translate(225.0f,0.0f,180.0f)
+              * Matrix_Rotate_Z(-0.4f)
+              * Matrix_Rotate_X(1.5f)
+              * Matrix_Scale(35.00f, 20.00f, 35.00f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, ASTEROID);
+        DrawVirtualObject("asteroid");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        model = Matrix_Translate(43.0f,89.0f,-25.0f)
+              * Matrix_Rotate_X(1.2f)
+              * Matrix_Scale(20.00f, 20.00f, 20.00f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, ASTEROID);
+        DrawVirtualObject("asteroid");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        model = Matrix_Translate(-130.0f,-150.0f,230.0f)
+              * Matrix_Rotate_Z(0.6f)
+              * Matrix_Scale(25.00f, 25.00f, 25.00f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, ASTEROID);
+        DrawVirtualObject("asteroid");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo do planeta pequeno
+        model = Matrix_Translate(-245.0f,170.0f,0.0f)
+              * Matrix_Rotate_Z(0.6f)
+              * Matrix_Rotate_X(0.2f)
+              * Matrix_Rotate_Y((float)glfwGetTime() * 0.1f)
+              * Matrix_Scale(10.00f, 10.00f, 10.00f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, SPHERE);
+        DrawVirtualObject("sphere");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos o modelo do planeta grande
+        model = Matrix_Translate(0.0f,-250.0f,0.0f)
+              * Matrix_Scale(200.00f, 200.00f, 200.00f);
+        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(object_id_uniform, TROPICAL);
+        DrawVirtualObject("sphere");
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
@@ -465,8 +540,13 @@ int main(int argc, char* argv[])
               * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z) // Traz a nave para a posição da câmera
               * Matrix_Scale(0.01f, 0.01f, 0.01f); // Reduz o tamanho do modelo da nave
 
+        oldViewVector = glm::vec4(0.0f, 0.0f, 3.5f, 0.0f);
+        // Pega o ângulo entre o vetor view novo e antigo
+        float rotationAngle = acos(dotproduct(g_CameraViewVector, oldViewVector)/(norm(g_CameraViewVector)*norm(oldViewVector)));
+        glm::vec4 rotationAxis = normalize(crossproduct(g_CameraViewVector, oldViewVector));
+        // E rotaciona o vetor up em relação ao mesmo eixo e no mesmo ângulo
+        model = model * Matrix_Rotate(rotationAngle, rotationAxis);
 
-        //model = model * Matrix_Translate(direction.x*15, direction.y*15, direction.z*15);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SHIP);
         DrawVirtualObject("ship");
@@ -626,6 +706,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage5"), 5);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage6"), 6);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
     glUseProgram(0);
 }
 
@@ -1075,12 +1157,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre 0 e +pi.
-        // HACK PARA EVITAR DIVISAO POR ZERO
-        float phimax = 31*PI/32;
-        float phimin = 0.2f;
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
+        float phimax = PI;
+        float phimin = 0.1f;
 
+        if (g_CameraPhi >= phimax)
+            g_CameraPhi = phimax;
         if (g_CameraPhi < phimin)
             g_CameraPhi = phimin;
 
@@ -1209,6 +1290,53 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 void ErrorCallback(int error, const char* description)
 {
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
+}
+
+glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
+    // Impede que o usuário chegue próximo dos 6 planos que compõem a skybox
+    if( cameraPosition.x > 250.0f )
+        cameraPosition.x = 250.0f;
+    if( cameraPosition.x < -250.0f )
+        cameraPosition.x = -250.0f;
+    if( cameraPosition.y > 250.0f )
+        cameraPosition.y = 250.0f;
+    if( cameraPosition.y < -250.0f )
+        cameraPosition.y = -250.0f;
+    if( cameraPosition.z > 250.0f )
+        cameraPosition.z = 250.0f;
+    if( cameraPosition.z < -250.0f )
+        cameraPosition.z = -250.0f;
+
+    // Impede que o usuário entre em qualquer um dos dois planetas na cena
+    glm::vec3 bbox_minSphere = g_VirtualScene["sphere"].bbox_min;
+    glm::vec3 bbox_maxSphere = g_VirtualScene["sphere"].bbox_max;
+
+    float radiusBigPlanet = 200.0f; // Porque o planeta grande foi escalado 200 vezes
+    glm::vec4 bbox_centerBigPlanet = glm::vec4((radiusBigPlanet * bbox_minSphere) + (radiusBigPlanet * bbox_maxSphere), 1.0f);
+    bbox_centerBigPlanet.y = bbox_centerBigPlanet.y - 250.0f; // E movido 250 unidades para baixo no eixo y
+
+    float distanceBigPlanet = distanceBetweenPoints(cameraPosition, bbox_centerBigPlanet);
+    if( (distanceBigPlanet - radiusBigPlanet) < EPSILON ){
+        glm::vec4 pushCamera = cameraPosition - bbox_centerBigPlanet; // Cria o vetor que vai empurrar a câmera para longe do planeta
+        pushCamera.w = 0.0f;
+        pushCamera = normalize(pushCamera) * 10.0f;
+        cameraPosition = cameraPosition + pushCamera;
+    }
+
+    float radiusSmallPlanet = 10.0f; // Porque o planeta pequeno foi escalado 10 vezes
+    glm::vec4 bbox_centerSmallPlanet = glm::vec4((radiusSmallPlanet * bbox_minSphere) + (radiusSmallPlanet * bbox_maxSphere), 1.0f);
+    bbox_centerSmallPlanet.y = bbox_centerSmallPlanet.y + 170.0f; // E movido 170 unidades para cima no eixo y
+    bbox_centerSmallPlanet.x = bbox_centerSmallPlanet.x - 245.0f; // E movido 245 unidades para esquerda no eixo x
+
+    float distanceSmallPlanet = distanceBetweenPoints(cameraPosition, bbox_centerSmallPlanet);
+    if( (distanceSmallPlanet - radiusSmallPlanet) < EPSILON ){
+        glm::vec4 pushCamera = cameraPosition - bbox_centerSmallPlanet; // Cria o vetor que vai empurrar a câmera para longe do planeta
+        pushCamera.w = 0.0f;
+        pushCamera = normalize(pushCamera) * 3.0f;
+        cameraPosition = cameraPosition + pushCamera;
+    }
+
+    return cameraPosition;
 }
 
 // Esta função recebe um vértice com coordenadas de modelo p_model e passa o

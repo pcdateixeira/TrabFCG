@@ -4,6 +4,28 @@
 - [x] Add a skybox
 - [x] Find the local Y axis of the camera, to be used to properly create the camera's View matrix and translate the player character a little below the center of the screen
 - [x] Add a proper spaceship model as the player character
-- [ ] Add other objects to the scene, like planets and space stations
+- [x] Fix CursorPosCallback to avoid division by zero
+- [x] Add invisible walls, stopping the player from moving if they reach certain positions
+- [x] Add collision tests between the player and either of the planets
+- [x] Add other objects to the scene, like planets and space stations
 - [ ] Give the player movement six degrees of freedom
-= [ ] Make the player ship rotate along with the camera, so the front of the ship always points to the center of the screen
+- [ ] Make the player ship rotate along with the camera, so the front of the ship always points to the center of the screen
+- [ ] Make everything move in the game according to time passed, and not CPU speed
+- [ ] Find out why the first texture isn't loading
+- [x] Add Gouraud shading to the asteroids
+- [ ] Add collision tests between the player and the asteroids
+
+se phi entre pi e 2pi, inverte x e z
+
+NECESSARY TO COMPLETE THE PROJECT
+- [x] No mínimo um modelo geométrico da complexidade igual ou maior que o modelo "cow.obj"
+- [x] O usuário deve poder controlar transformações geométricas aplicadas aos objetos virtuais (movimento da nave)
+- [x] No mínimo um objeto virtual deve ser copiado com duas ou mais instâncias
+- [x] No mínimo um objeto virtual de sua aplicação deve ter sua cor definida através de uma textura definida através de uma imagem
+- [ ] No mínimo sua aplicação deve implementar uma câmera look-at e uma câmera livre
+- [ ] No mínimo sua aplicação deve utilizar três tipos de teste de intersecção (dois, por enquanto)
+- [x] No mínimo um objeto com modelo de Phong
+- [x] No mínimo um objeto com modelo de Gouraud
+- [x] No mínimo objetos com os seguintes modelos de iluminação: difusa (Lambert) e Blinn-Phong
+- [ ] No mínimo um objeto virtual de sua aplicação deve ter sua movimentação definida através de uma curva de Bézier cúbica
+- [ ] Todas as movimentações de objetos (incluindo da câmera) devem ser computadas baseado no tempo

@@ -1,7 +1,6 @@
 # Blender v2.79 (sub 0) OBJ File: ''
 # www.blender.org
-mtllib ship2.mtl
-o ship
+g ship
 v 0.515538 0.744846 2.605309
 v 0.251763 1.066186 3.079071
 v 0.343659 0.748738 3.373722
