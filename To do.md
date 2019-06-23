@@ -10,10 +10,10 @@
 - [x] Add other objects to the scene, like planets and space stations
 - [x] Add Gouraud shading to the asteroids
 - [x] Add collision tests between the player and the asteroids
+- [x] Make everything move in the game according to time passed, and not CPU speed
+- [x] Find out why the first texture isn't loading
 - [ ] Give the player movement six degrees of freedom
 - [ ] Make the player ship rotate along with the camera, so the front of the ship always points to the center of the screen
-- [ ] Make everything move in the game according to time passed, and not CPU speed
-- [ ] Find out why the first texture isn't loading
 
 se phi entre pi e 2pi, inverte x e z
 
@@ -22,10 +22,10 @@ NECESSARY TO COMPLETE THE PROJECT
 - [x] O usuário deve poder controlar transformações geométricas aplicadas aos objetos virtuais (movimento da nave)
 - [x] No mínimo um objeto virtual deve ser copiado com duas ou mais instâncias
 - [x] No mínimo um objeto virtual de sua aplicação deve ter sua cor definida através de uma textura definida através de uma imagem
-- [ ] No mínimo sua aplicação deve implementar uma câmera look-at e uma câmera livre
+- [x] No mínimo sua aplicação deve implementar uma câmera look-at e uma câmera livre
 - [x] No mínimo sua aplicação deve utilizar três tipos de teste de intersecção
 - [x] No mínimo um objeto com modelo de Phong
 - [x] No mínimo um objeto com modelo de Gouraud
 - [x] No mínimo objetos com os seguintes modelos de iluminação: difusa (Lambert) e Blinn-Phong
 - [ ] No mínimo um objeto virtual de sua aplicação deve ter sua movimentação definida através de uma curva de Bézier cúbica
-- [ ] Todas as movimentações de objetos (incluindo da câmera) devem ser computadas baseado no tempo
+- [x] Todas as movimentações de objetos (incluindo da câmera) devem ser computadas baseado no tempo

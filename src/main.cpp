@@ -129,10 +129,21 @@ float EPSILON = 0.01f;
 // Variáveis que definem se certas teclas/botões estão sendo pressionados no momento atual
 // Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
+bool g_MiddleMouseButtonPressed = false;
 bool g_WKeyPressed = false;
 bool g_AKeyPressed = false;
 bool g_SKeyPressed = false;
 bool g_DKeyPressed = false;
+bool g_SpaceKeyPressed = false;
+bool g_LeftShiftKeyPressed = false;
+
+// Posições dos asteroides na cena
+glm::vec4 g_AsteroidPos[5] = {
+    glm::vec4(-100.0f,100.0f,0.0f,1.0f),
+    glm::vec4(-35.0f,-50.0f,-240.0f,1.0f),
+    glm::vec4(225.0f,0.0f,180.0f,1.0f),
+    glm::vec4(43.0f,89.0f,-25.0f,1.0f),
+    glm::vec4(-130.0f,-150.0f,230.0f,1.0f)};
 
 // Variáveis que definem onde a câmera está olhando em coordenadas esféricas, controladas pelo usuário através do mouse
 // (veja função CursorPosCallback()). A posição efetiva é calculada dentro da função main(), dentro do loop de renderização.
@@ -283,6 +294,9 @@ int main(int argc, char* argv[])
     glm::mat4 the_model;
     glm::mat4 the_view;
 
+    double t_prev = glfwGetTime();
+    double t_now;
+    double t_diff;
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
@@ -298,33 +312,48 @@ int main(int argc, char* argv[])
         // Pedimos para a GPU utilizar o programa de GPU criado acima (contendo os shaders de vértice e fragmentos).
         glUseProgram(program_id);
 
+        t_now = glfwGetTime();
+        t_diff = t_now - t_prev;
+        t_prev = t_now;
+
         // Movimentação da câmera de acordo com as teclas sendo pressionadas no momento.
         // Veja a função KeyCallback().
         float cameraSpeed = 0.05f;
         glm::vec4 cameraRightVector = normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
 
         if (g_WKeyPressed)
-            g_CameraPosition += cameraSpeed * g_CameraViewVector;
+            g_CameraPosition += (cameraSpeed + (float) t_diff) * g_CameraViewVector;
         if (g_AKeyPressed)
-            g_CameraPosition -= cameraSpeed * cameraRightVector;
+            g_CameraPosition -= (cameraSpeed + (float) t_diff) * cameraRightVector;
         if (g_SKeyPressed)
-            g_CameraPosition -= cameraSpeed * g_CameraViewVector;
+            g_CameraPosition -= (cameraSpeed + (float) t_diff) * g_CameraViewVector;
         if (g_DKeyPressed)
-            g_CameraPosition += cameraSpeed * cameraRightVector;
+            g_CameraPosition += (cameraSpeed + (float) t_diff) * cameraRightVector;
+        if (g_SpaceKeyPressed && !g_LeftShiftKeyPressed)
+            g_CameraPosition += (cameraSpeed + (float) t_diff) * g_CameraUpVector;
+        if (g_SpaceKeyPressed && g_LeftShiftKeyPressed)
+            g_CameraPosition -= (cameraSpeed + (float) t_diff) * g_CameraUpVector;
 
         g_CameraPosition = checkIntersection(g_CameraPosition); //check for intersection here
 
-        // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
-        // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
-        float r = g_CameraDistance;
-        float x = g_CameraPosition.x + r*sin(g_CameraPhi)*sin(g_CameraTheta);
-        float z = g_CameraPosition.z + r*sin(g_CameraPhi)*cos(g_CameraTheta);
-        float y = g_CameraPosition.y + r*cos(g_CameraPhi);
-
-        g_CameraLookAt = glm::vec4(x,y,z,1.0f);
-
         glm::vec4 oldViewVector = g_CameraViewVector;
-        g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
+
+        if(!g_MiddleMouseButtonPressed){
+            // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
+            // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
+            float r = g_CameraDistance;
+            float x = g_CameraPosition.x + r*sin(g_CameraPhi)*sin(g_CameraTheta);
+            float z = g_CameraPosition.z + r*sin(g_CameraPhi)*cos(g_CameraTheta);
+            float y = g_CameraPosition.y + r*cos(g_CameraPhi);
+
+            g_CameraLookAt = glm::vec4(x,y,z,1.0f);
+
+            g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
+        }
+        else{
+            g_CameraLookAt = glm::vec4(-245.0f,170.0f,0.0f,1.0f);
+            g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
+        }
 
         if(notEqual(oldViewVector, g_CameraViewVector, EPSILON)) // Se houve uma mudança no vetor view
         {
@@ -352,7 +381,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far estão no sentido negativo!
         // Veja slides 190-193 do documento "Aula_09_Projecoes.pdf".
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -800.0f; // Posição do "far plane"
+        float farplane  = -2400.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -394,7 +423,7 @@ int main(int argc, char* argv[])
         #define ASTEROID 9
 
         // Desenhamos alguns asteroides
-        model = Matrix_Translate(-100.0f,100.0f,0.0f)
+        model = Matrix_Translate(g_AsteroidPos[0].x,g_AsteroidPos[0].y,g_AsteroidPos[0].z)
               * Matrix_Scale(30.00f, 30.00f, 20.00f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, ASTEROID);
@@ -403,7 +432,7 @@ int main(int argc, char* argv[])
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(-35.0f,-50.0f,-240.0f)
+        model = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
               * Matrix_Rotate_Y(2.3f)
               * Matrix_Scale(30.00f, 30.00f, 30.00f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -413,7 +442,7 @@ int main(int argc, char* argv[])
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(225.0f,0.0f,180.0f)
+        model = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
               * Matrix_Rotate_Z(-0.4f)
               * Matrix_Rotate_X(1.5f)
               * Matrix_Scale(35.00f, 20.00f, 35.00f);
@@ -424,7 +453,7 @@ int main(int argc, char* argv[])
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(43.0f,89.0f,-25.0f)
+        model = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
               * Matrix_Rotate_X(1.2f)
               * Matrix_Scale(20.00f, 20.00f, 20.00f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -434,7 +463,7 @@ int main(int argc, char* argv[])
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(-130.0f,-150.0f,230.0f)
+        model = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
               * Matrix_Rotate_Z(0.6f)
               * Matrix_Scale(25.00f, 25.00f, 25.00f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -468,7 +497,7 @@ int main(int argc, char* argv[])
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Desenhamos o modelo do chão da skybox
-        model = Matrix_Translate(0.0f, -300.0f, 0.0f)
+        model = Matrix_Translate(0.0f, -1000.0f, 0.0f)
               * Matrix_Rotate_Y(PI/2);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SKYBOX_BOTTOM);
@@ -478,7 +507,7 @@ int main(int argc, char* argv[])
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Desenhamos o modelo do teto da skybox
-        model = Matrix_Translate(0.0f, 300.0f, 0.0f)
+        model = Matrix_Translate(0.0f, 1000.0f, 0.0f)
               * Matrix_Rotate_Z(PI)
               * Matrix_Rotate_Y(PI/2);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -489,7 +518,7 @@ int main(int argc, char* argv[])
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Desenhamos o modelo da parede da frente da skybox
-        model = Matrix_Translate(300.0f, 0.0f, 0.0f)
+        model = Matrix_Translate(1000.0f, 0.0f, 0.0f)
               * Matrix_Rotate_Z(PI/2)
               * Matrix_Rotate_Y(PI/2);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -500,7 +529,7 @@ int main(int argc, char* argv[])
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Desenhamos o modelo da parede de trás da skybox
-        model = Matrix_Translate(-300.0f, 0.0f, 0.0f)
+        model = Matrix_Translate(-1000.0f, 0.0f, 0.0f)
               * Matrix_Rotate_Z(3*PI/2)
               * Matrix_Rotate_Y(3*PI/2);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -511,7 +540,7 @@ int main(int argc, char* argv[])
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Desenhamos o modelo da parede da esquerda da skybox
-        model = Matrix_Translate(0.0f, 0.0f, -300.0f)
+        model = Matrix_Translate(0.0f, 0.0f, -1000.0f)
               * Matrix_Rotate_X(PI/2)
               * Matrix_Rotate_Y(PI);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -522,7 +551,7 @@ int main(int argc, char* argv[])
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
         // Desenhamos o modelo da parede da direita da skybox
-        model = Matrix_Translate(0.0f, 0.0f, 300.0f)
+        model = Matrix_Translate(0.0f, 0.0f, 1000.0f)
               * Matrix_Rotate_X(3*PI/2);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SKYBOX_RIGHT);
@@ -1134,6 +1163,13 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         // variável abaixo para false.
         g_LeftMouseButtonPressed = false;
     }
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+    {
+        if(g_MiddleMouseButtonPressed == true)
+            g_MiddleMouseButtonPressed = false;
+        else
+            g_MiddleMouseButtonPressed = true;
+    }
 }
 
 // Função callback chamada sempre que o usuário movimentar o cursor do mouse em
@@ -1146,7 +1182,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    if (g_LeftMouseButtonPressed)
+    if (g_LeftMouseButtonPressed && !g_MiddleMouseButtonPressed)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
@@ -1284,6 +1320,16 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_DKeyPressed = true;
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
         g_DKeyPressed = false;
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        g_SpaceKeyPressed = true;
+    if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+        g_SpaceKeyPressed = false;
+
+    if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS)
+        g_LeftShiftKeyPressed = true;
+    if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE)
+        g_LeftShiftKeyPressed = false;
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
@@ -1343,10 +1389,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     glm::vec3 bbox_maxAsteroid = g_VirtualScene["asteroid"].bbox_max;
 
     // ------- Asteroide 1
-    glm::vec4 bbox_minFirstAsteroid = Matrix_Translate(-100.0f,100.0f,0.0f)
+    glm::vec4 bbox_minFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x,g_AsteroidPos[0].y,g_AsteroidPos[0].z)
                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
-    glm::vec4 bbox_maxFirstAsteroid = Matrix_Translate(-100.0f,100.0f,0.0f)
+    glm::vec4 bbox_maxFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x,g_AsteroidPos[0].y,g_AsteroidPos[0].z)
                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
 
     if( cameraPosition.x >= bbox_minFirstAsteroid.x && cameraPosition.x <= bbox_maxFirstAsteroid.x &&
@@ -1364,10 +1410,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     }
 
     // ------- Asteroide 2
-    glm::vec4 bbox_minSecondAsteroid = Matrix_Translate(-35.0f,-50.0f,-240.0f)
+    glm::vec4 bbox_minSecondAsteroid = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
                                      * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
-    glm::vec4 bbox_maxSecondAsteroid = Matrix_Translate(-35.0f,-50.0f,-240.0f)
+    glm::vec4 bbox_maxSecondAsteroid = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
                                      * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
 
     if( cameraPosition.x >= bbox_minSecondAsteroid.x && cameraPosition.x <= bbox_maxSecondAsteroid.x &&
@@ -1385,10 +1431,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     }
 
     // ------- Asteroide 3
-    glm::vec4 bbox_minThirdAsteroid = Matrix_Translate(225.0f,0.0f,180.0f)
+    glm::vec4 bbox_minThirdAsteroid = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
                                     * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
-    glm::vec4 bbox_maxThirdAsteroid = Matrix_Translate(225.0f,0.0f,180.0f)
+    glm::vec4 bbox_maxThirdAsteroid = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
                                     * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
 
     if( cameraPosition.x >= bbox_minThirdAsteroid.x && cameraPosition.x <= bbox_maxThirdAsteroid.x &&
@@ -1406,10 +1452,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     }
 
     // ------- Asteroide 4
-    glm::vec4 bbox_minFourthAsteroid = Matrix_Translate(43.0f,89.0f,-25.0f)
+    glm::vec4 bbox_minFourthAsteroid = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
                                     * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
-    glm::vec4 bbox_maxFourthAsteroid = Matrix_Translate(43.0f,89.0f,-25.0f)
+    glm::vec4 bbox_maxFourthAsteroid = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
                                     * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
 
     if( cameraPosition.x >= bbox_minFourthAsteroid.x && cameraPosition.x <= bbox_maxFourthAsteroid.x &&
@@ -1427,10 +1473,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     }
 
     // ------- Asteroide 5
-    glm::vec4 bbox_minFifthAsteroid = Matrix_Translate(-130.0f,-150.0f,230.0f)
+    glm::vec4 bbox_minFifthAsteroid = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
                                     * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
-    glm::vec4 bbox_maxFifthAsteroid = Matrix_Translate(-130.0f,-150.0f,230.0f)
+    glm::vec4 bbox_maxFifthAsteroid = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
                                     * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
 
     if( cameraPosition.x >= bbox_minFifthAsteroid.x && cameraPosition.x <= bbox_maxFifthAsteroid.x &&
