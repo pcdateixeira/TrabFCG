@@ -69,6 +69,7 @@ void main()
     // sistema de coordenadas da câmera.
     vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
     vec4 camera_position = inverse(view) * origin;
+    vec4 light_position = vec4(500.0f,20.0f,50.0f, 1.0);
 
     // O fragmento atual é coberto por um ponto que percente à superfície de um
     // dos objetos virtuais da cena. Este ponto, p, possui uma posição no
@@ -82,7 +83,7 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    vec4 l = normalize(camera_position - p);
+    vec4 l = normalize(light_position - p);
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -94,19 +95,26 @@ void main()
     vec4 h = (v + l)/length(v + l);
 
     // Parâmetros que definem as propriedades espectrais da superfície
-    vec3 Kd = vec3(0.12,0.12,0.12); // Refletância difusa
+    vec3 Kd = vec3(0.32,0.32,0.32); // Refletância difusa
     vec3 Ks = vec3(0.12,0.12,0.12); // Refletância especular
-    vec3 Ka = vec3(0.12,0.12,0.12); // Refletância ambiente
+    vec3 Ka = vec3(0.32,0.32,0.32); // Refletância ambiente
     float q = 20.0; // Expoente especular para o modelo de iluminação de Phong
 
     // Espectro da fonte de iluminação
-    vec3 I = vec3(1.0,1.0,1.0);
+    vec3 I = vec3(0.5,1.0,0.5);
 
     // Espectro da luz ambiente
     vec3 Ia = vec3(0.2,0.2,0.2);
 
+    // Distância da fonte de luz para o fragmento
+    float dist = distance(light_position, p);
+
+    // Fator atenuante da fonte de luz, de acordo com sua distância para o fragmento
+    //float att = 1.0/(1.0 + 0.001*dist + 0.0001*dist*dist);
+    float att = 1.0;
+
     // Termo difuso utilizando a lei dos cossenos de Lambert
-    vec3 lambert_diffuse_term = Kd * I * max(0, dot(n,l));
+    vec3 lambert_diffuse_term = att * Kd * I * max(0, dot(n,l));
 
     // Termo ambiente
     vec3 ambient_term = Ka * Ia;
@@ -115,7 +123,7 @@ void main()
     //vec3 phong_specular_term = Ks * I * max(0, pow(dot(r,v),q));
 
     // Termo especular utilizando o modelo de iluminação de Blinn-Phong
-    vec3 phong_specular_term = Ks * I * max(0, pow(dot(n,h),q));
+    vec3 phong_specular_term = att * Ks * I * max(0, pow(dot(n,h),q));
 
     color_v = lambert_diffuse_term + ambient_term + phong_specular_term;
 }

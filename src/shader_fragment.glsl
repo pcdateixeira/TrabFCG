@@ -32,6 +32,7 @@ uniform mat4 projection;
 #define SKYBOX_RIGHT 7
 #define TROPICAL 8
 #define ASTEROID 9
+#define BULLET 10
 
 uniform int object_id;
 
@@ -98,6 +99,7 @@ void main()
         // sistema de coordenadas da câmera.
         vec4 origin = vec4(0.0, 0.0, 0.0, 1.0);
         vec4 camera_position = inverse(view) * origin;
+        vec4 light_position = vec4(500.0f,20.0f,50.0f, 1.0);
 
         // O fragmento atual é coberto por um ponto que percente à superfície de um
         // dos objetos virtuais da cena. Este ponto, p, possui uma posição no
@@ -111,7 +113,7 @@ void main()
         vec4 n = normalize(normal);
 
         // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-        vec4 l = normalize(camera_position - p);
+        vec4 l = normalize(light_position - p);
 
         // Vetor que define o sentido da câmera em relação ao ponto atual.
         vec4 v = normalize(camera_position - p);
@@ -140,7 +142,7 @@ void main()
             // Propriedades espectrais do planeta
             Kd = texture(TextureImage8, vec2(U,V)).rgb;
             Ks = vec3(0.0,0.0,0.0);
-            Ka = Ks;
+            Ka = Kd;
             q = 1.0;
         }
         else if ( object_id == TROPICAL )
@@ -155,7 +157,7 @@ void main()
             // Propriedades espectrais do planeta
             Kd = texture(TextureImage9, vec2(U,V)).rgb;
             Ks = vec3(0.0,0.0,0.0);
-            Ka = Ks;
+            Ka = Kd;
             q = 1.0;
         }
         else if ( object_id == SHIP )
@@ -164,9 +166,16 @@ void main()
             U = texcoords.x;
             V = texcoords.y;
             Kd = texture(TextureImage1, vec2(U,V)).rgb;
-            Ks = vec3(0.0,0.0,0.0);
-            Ka = vec3(0.0,0.0,0.0);
+            Ks = Kd;
+            Ka = Kd;
             q = 1.0;
+        }
+        else if ( object_id == BULLET )
+        {
+            Kd = vec3(1.0,1.0,0.0);
+            Ks = vec3(1.0,1.0,0.0);
+            Ka = vec3(1.0,1.0,0.0);
+            q = 20.0;
         }
         else // Objeto desconhecido = branco
         {
@@ -177,13 +186,20 @@ void main()
         }
 
         // Espectro da fonte de iluminação
-        vec3 I = vec3(1.0,1.0,1.0);
+        vec3 I = vec3(0.5,1.0,0.5);
 
         // Espectro da luz ambiente
-        vec3 Ia = vec3(0.2,0.2,0.2);
+        vec3 Ia = vec3(0.4,0.4,0.4);
+
+        // Distância da fonte de luz para o fragmento
+        float dist = distance(light_position, p);
+
+        // Fator atenuante da fonte de luz, de acordo com sua distância para o fragmento
+        //float att = 1.0/(1.0 + 0.0001*dist + 0.00001*dist*dist);
+        float att = 1.0;
 
         // Termo difuso utilizando a lei dos cossenos de Lambert
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n,l));
+        vec3 lambert_diffuse_term = att * Kd * I * max(0, dot(n,l));
 
         // Termo ambiente
         vec3 ambient_term = Ka * Ia;
@@ -192,7 +208,7 @@ void main()
         //vec3 phong_specular_term = Ks * I * max(0, pow(dot(r,v),q));
 
         // Termo especular utilizando o modelo de iluminação de Blinn-Phong
-        vec3 phong_specular_term = Ks * I * max(0, pow(dot(n,h),q));
+        vec3 phong_specular_term = att * Ks * I * max(0, pow(dot(n,h),q));
 
         // Cor final do fragmento calculada com uma combinação dos termos difuso,
         // especular, e ambiente. Veja slide 133 do documento "Aula_17_e_18_Modelos_de_Iluminacao.pdf".

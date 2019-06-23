@@ -90,6 +90,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 glm::vec4 checkIntersection(glm::vec4 cameraPosition);
+void bulletCollision();
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -124,18 +125,23 @@ float g_AngleY = 0.0f;
 float g_AngleZ = 0.0f;
 
 float PI = 3.141592f;
-float EPSILON = 0.01f;
+float EPSILON = 0.000000000001f;
 
 // Variáveis que definem se certas teclas/botões estão sendo pressionados no momento atual
 // Veja função MouseButtonCallback().
 bool g_LeftMouseButtonPressed = false;
-bool g_MiddleMouseButtonPressed = false;
+bool g_MiddleMouseButtonToggled = false;
+bool g_RightMouseButtonPressed = false;
 bool g_WKeyPressed = false;
 bool g_AKeyPressed = false;
 bool g_SKeyPressed = false;
 bool g_DKeyPressed = false;
+bool g_QKeyPressed = false;
+bool g_EKeyPressed = false;
 bool g_SpaceKeyPressed = false;
 bool g_LeftShiftKeyPressed = false;
+
+bool g_TargetLocked = false;
 
 // Posições dos asteroides na cena
 glm::vec4 g_AsteroidPos[5] = {
@@ -144,6 +150,25 @@ glm::vec4 g_AsteroidPos[5] = {
     glm::vec4(225.0f,0.0f,180.0f,1.0f),
     glm::vec4(43.0f,89.0f,-25.0f,1.0f),
     glm::vec4(-130.0f,-150.0f,230.0f,1.0f)};
+int g_ClosestAsteroid = 0;
+bool g_AsteroidVisible[5] = {true, true, true, true, true};
+
+glm::dvec3 g_ControlPoints[4] = {
+    //glm::dvec3(0.1,1.0,0.5),glm::dvec3(0.88,1.0,0.13),glm::dvec3(0.94,0.8,0.26),glm::dvec3(0.72,1.0,0.7)
+    glm::dvec3(111.1,210.4,111.0),glm::dvec3(211.56,112.25,111.0),glm::dvec3(-50.33,50.99,51.0),glm::dvec3(40.78,92.85,31.0)
+    //glm::dvec3(0.454,0.065,0.0),glm::dvec3(0.76,0.635,0.0),glm::dvec3(0.06,0.314,0.0),glm::dvec3(0.33,0.89,0.0)
+};
+int g_BezierOrientation = 1;
+double g_TimePassed = 0.0;
+double g_BezierDisplacementX = 0.0;
+double g_BezierDisplacementY = 0.0;
+double g_BezierDisplacementZ = 0.0;
+
+bool g_BulletVisible = false;
+glm::vec4 g_BulletOrigin;
+glm::vec4 g_BulletPosition;
+glm::vec4 g_BulletDirection;
+float g_BulletDistance = 0.0f;
 
 // Variáveis que definem onde a câmera está olhando em coordenadas esféricas, controladas pelo usuário através do mouse
 // (veja função CursorPosCallback()). A posição efetiva é calculada dentro da função main(), dentro do loop de renderização.
@@ -159,6 +184,7 @@ glm::vec4 g_CameraLookAt    = glm::vec4(g_CameraPosition.x + g_CameraDistance*si
                                         g_CameraPosition.z + g_CameraDistance*sin(g_CameraPhi)*cos(g_CameraTheta),1.0f);
 glm::vec4 g_CameraViewVector = g_CameraLookAt - g_CameraPosition; // Vetor "view", sentido para onde a câmera está virada
 glm::vec4 g_CameraUpVector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eixo Y global)
+glm::vec4 g_CameraRightVector = normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
 bool g_UsePerspectiveProjection = true;
@@ -319,16 +345,21 @@ int main(int argc, char* argv[])
         // Movimentação da câmera de acordo com as teclas sendo pressionadas no momento.
         // Veja a função KeyCallback().
         float cameraSpeed = 0.05f;
-        glm::vec4 cameraRightVector = normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
+        float rotationSpeed = 0.001f;
+        g_CameraRightVector = normalize(crossproduct(g_CameraViewVector, g_CameraUpVector));
 
         if (g_WKeyPressed)
             g_CameraPosition += (cameraSpeed + (float) t_diff) * g_CameraViewVector;
         if (g_AKeyPressed)
-            g_CameraPosition -= (cameraSpeed + (float) t_diff) * cameraRightVector;
+            g_CameraPosition -= (cameraSpeed + (float) t_diff) * g_CameraRightVector;
         if (g_SKeyPressed)
             g_CameraPosition -= (cameraSpeed + (float) t_diff) * g_CameraViewVector;
         if (g_DKeyPressed)
-            g_CameraPosition += (cameraSpeed + (float) t_diff) * cameraRightVector;
+            g_CameraPosition += (cameraSpeed + (float) t_diff) * g_CameraRightVector;
+        if (g_QKeyPressed)
+            g_CameraUpVector = Matrix_Rotate((rotationSpeed + (float) t_diff), g_CameraViewVector) * g_CameraUpVector;
+        if (g_EKeyPressed)
+            g_CameraUpVector = Matrix_Rotate((-rotationSpeed - (float) t_diff), g_CameraViewVector) * g_CameraUpVector;
         if (g_SpaceKeyPressed && !g_LeftShiftKeyPressed)
             g_CameraPosition += (cameraSpeed + (float) t_diff) * g_CameraUpVector;
         if (g_SpaceKeyPressed && g_LeftShiftKeyPressed)
@@ -338,7 +369,7 @@ int main(int argc, char* argv[])
 
         glm::vec4 oldViewVector = g_CameraViewVector;
 
-        if(!g_MiddleMouseButtonPressed){
+        if(!g_MiddleMouseButtonToggled){
             // Computamos a direção da câmera utilizando coordenadas esféricas. As variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
             // controladas pelo mouse do usuário. Veja as funções CursorPosCallback() e ScrollCallback().
             float r = g_CameraDistance;
@@ -351,7 +382,39 @@ int main(int argc, char* argv[])
             g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
         }
         else{
-            g_CameraLookAt = glm::vec4(-245.0f,170.0f,0.0f,1.0f);
+            if(!g_TargetLocked){
+                g_ClosestAsteroid = -1;
+                float distanceToAsteroid = distanceBetweenPoints(g_CameraPosition, g_AsteroidPos[0]);
+                float distanceClosest = distanceToAsteroid;
+                if(g_AsteroidVisible[0] == true)
+                    g_ClosestAsteroid = 0;
+
+                for(int i = 1; i <= 4; i++){
+                    distanceToAsteroid = distanceBetweenPoints(g_CameraPosition, g_AsteroidPos[i]);
+                    if(distanceToAsteroid <= distanceClosest && g_AsteroidVisible[i] == true){
+                        distanceClosest = distanceToAsteroid;
+                        g_ClosestAsteroid = i;
+                    }
+                }
+                if(g_ClosestAsteroid > -1) {// If at least one asteroid is visible
+                    g_CameraLookAt = g_AsteroidPos[g_ClosestAsteroid];
+                    g_TargetLocked = true;
+                }
+                else{
+                    g_MiddleMouseButtonToggled = false;
+                }
+            }
+            else if(g_TargetLocked && (g_ClosestAsteroid == 0) && (g_AsteroidVisible[0] == true)) {
+                g_CameraLookAt = glm::vec4(g_AsteroidPos[0].x + g_BezierDisplacementX,
+                                           g_AsteroidPos[0].y + g_BezierDisplacementY,
+                                           g_AsteroidPos[0].z + g_BezierDisplacementZ,
+                                           1.0);
+            }
+            else if(g_TargetLocked && g_AsteroidVisible[g_ClosestAsteroid] == false){
+                g_TargetLocked = false;
+                g_MiddleMouseButtonToggled = false;
+            }
+
             g_CameraViewVector = normalize(g_CameraLookAt - g_CameraPosition);
         }
 
@@ -421,54 +484,100 @@ int main(int argc, char* argv[])
         #define SKYBOX_RIGHT 7
         #define TROPICAL 8
         #define ASTEROID 9
+        #define BULLET 10
 
         // Desenhamos alguns asteroides
-        model = Matrix_Translate(g_AsteroidPos[0].x,g_AsteroidPos[0].y,g_AsteroidPos[0].z)
-              * Matrix_Scale(30.00f, 30.00f, 20.00f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, ASTEROID);
-        DrawVirtualObject("asteroid");
+
+        // Esse asteroide se movimenta ao longo de uma curva de Bézier
+        if(g_AsteroidVisible[0] == true){
+            double tmp = glfwGetTime()/25 - g_TimePassed;
+            double time;
+            if(g_BezierOrientation == 1){
+                time = tmp;
+            }
+            if(time >= 1 && g_BezierOrientation == 1){
+                g_BezierOrientation = 0;
+                g_TimePassed = glfwGetTime()/25;
+                tmp = glfwGetTime()/25 - g_TimePassed;
+            }
+            if(g_BezierOrientation == 0){
+                time = 1 - tmp;
+            }
+            if(time <= 0 && g_BezierOrientation == 0){
+                g_BezierOrientation = 1;
+                g_TimePassed = glfwGetTime()/25;
+            }
+
+            double mt = 1 - time;
+
+            g_BezierDisplacementX = mt*mt*mt*g_ControlPoints[0].x +
+                3*time*mt*mt*g_ControlPoints[1].x +
+                3*time*time*mt*g_ControlPoints[2].x +
+                time*time*time*g_ControlPoints[3].x;
+            g_BezierDisplacementY = mt*mt*mt*g_ControlPoints[0].y +
+                3*time*mt*mt*g_ControlPoints[1].y +
+                3*time*time*mt*g_ControlPoints[2].y +
+                time*time*time*g_ControlPoints[3].y;
+            g_BezierDisplacementZ = mt*mt*mt*g_ControlPoints[0].z +
+                3*time*mt*mt*g_ControlPoints[1].z +
+                3*time*time*mt*g_ControlPoints[2].z +
+                time*time*time*g_ControlPoints[3].z;
+
+            model = Matrix_Translate(g_AsteroidPos[0].x + g_BezierDisplacementX,g_AsteroidPos[0].y + g_BezierDisplacementY,g_AsteroidPos[0].z + g_BezierDisplacementZ)
+                  * Matrix_Scale(30.00f, 30.00f, 20.00f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, ASTEROID);
+            DrawVirtualObject("asteroid");
+        }
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
-              * Matrix_Rotate_Y(2.3f)
-              * Matrix_Scale(30.00f, 30.00f, 30.00f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, ASTEROID);
-        DrawVirtualObject("asteroid");
+        if(g_AsteroidVisible[1] == true){
+            model = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
+                  * Matrix_Rotate_Y(2.3f)
+                  * Matrix_Scale(30.00f, 30.00f, 30.00f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, ASTEROID);
+            DrawVirtualObject("asteroid");
+        }
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
-              * Matrix_Rotate_Z(-0.4f)
-              * Matrix_Rotate_X(1.5f)
-              * Matrix_Scale(35.00f, 20.00f, 35.00f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, ASTEROID);
-        DrawVirtualObject("asteroid");
+        if(g_AsteroidVisible[2] == true){
+            model = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
+                  * Matrix_Rotate_Z(-0.4f)
+                  * Matrix_Rotate_X(1.5f)
+                  * Matrix_Scale(35.00f, 20.00f, 35.00f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, ASTEROID);
+            DrawVirtualObject("asteroid");
+        }
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
-              * Matrix_Rotate_X(1.2f)
-              * Matrix_Scale(20.00f, 20.00f, 20.00f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, ASTEROID);
-        DrawVirtualObject("asteroid");
+        if(g_AsteroidVisible[3] == true){
+            model = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
+                  * Matrix_Rotate_X(1.2f)
+                  * Matrix_Scale(20.00f, 20.00f, 20.00f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, ASTEROID);
+            DrawVirtualObject("asteroid");
+        }
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
 
-        model = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
-              * Matrix_Rotate_Z(0.6f)
-              * Matrix_Scale(25.00f, 25.00f, 25.00f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, ASTEROID);
-        DrawVirtualObject("asteroid");
+        if(g_AsteroidVisible[4] == true){
+            model = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
+                  * Matrix_Rotate_Z(0.6f)
+                  * Matrix_Scale(25.00f, 25.00f, 25.00f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, ASTEROID);
+            DrawVirtualObject("asteroid");
+        }
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
         PushMatrix(model); // Guardamos matriz model atual na pilha
@@ -558,6 +667,8 @@ int main(int argc, char* argv[])
         DrawVirtualObject("plane");
 
         PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
 
         // Desenhamos o modelo do personagem
         glm::vec4 direction = normalize(g_CameraViewVector);
@@ -565,20 +676,49 @@ int main(int argc, char* argv[])
 
         model = model
               * Matrix_Translate(downVector.x/20, downVector.y/20, downVector.z/20) // Coloca a nave um pouco abaixo da câmera
-              * Matrix_Translate(direction.x/6, direction.y/6, direction.z/6) // Coloca a nave um pouco à frente da câmera
+              * Matrix_Translate(direction.x/5, direction.y/5, direction.z/5) // Coloca a nave um pouco à frente da câmera
               * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z) // Traz a nave para a posição da câmera
+              * Matrix_Rotate(PI/2 - 1.1*g_CameraPhi, g_CameraRightVector)
+              * Matrix_Rotate(1.1*g_CameraTheta, g_CameraUpVector)
               * Matrix_Scale(0.01f, 0.01f, 0.01f); // Reduz o tamanho do modelo da nave
 
-        oldViewVector = glm::vec4(0.0f, 0.0f, 3.5f, 0.0f);
+        //oldViewVector = glm::vec4(0.0f, 0.0f, 3.5f, 0.0f);
         // Pega o ângulo entre o vetor view novo e antigo
-        float rotationAngle = acos(dotproduct(g_CameraViewVector, oldViewVector)/(norm(g_CameraViewVector)*norm(oldViewVector)));
-        glm::vec4 rotationAxis = normalize(crossproduct(g_CameraViewVector, oldViewVector));
+        //float rotationAngle = acos(dotproduct(g_CameraViewVector, oldViewVector)/(norm(g_CameraViewVector)*norm(oldViewVector)));
+        //glm::vec4 rotationAxis = normalize(crossproduct(g_CameraViewVector, oldViewVector));
         // E rotaciona o vetor up em relação ao mesmo eixo e no mesmo ângulo
-        model = model * Matrix_Rotate(rotationAngle, rotationAxis);
+        //model = model * Matrix_Rotate(rotationAngle, rotationAxis);
 
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SHIP);
         DrawVirtualObject("ship");
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos a bala atirada pela nave
+        if(g_LeftMouseButtonPressed == true && g_BulletVisible == false){
+            g_BulletVisible = true;
+            g_BulletOrigin = g_CameraPosition + 3.0f*g_CameraViewVector + 0.7f*downVector;
+            g_BulletPosition = g_BulletOrigin;
+            g_BulletDirection = g_CameraViewVector;
+            g_BulletDistance = 0.0f;
+        }
+        if(g_BulletVisible == true){
+            g_BulletPosition += (cameraSpeed + (float) t_diff) * g_BulletDirection;
+            g_BulletDistance = distanceBetweenPoints(g_BulletOrigin, g_BulletPosition);
+
+            model = Matrix_Translate(g_BulletPosition.x,g_BulletPosition.y,g_BulletPosition.z)
+                  * Matrix_Scale(0.1f, 0.1f, 0.1f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, BULLET);
+            DrawVirtualObject("sphere");
+
+            if(g_BulletDistance >= 60.0f)
+                g_BulletVisible = false;
+        }
+
+        bulletCollision(); // Checa se a bala atingiu algum dos asteroides em seu trajeto
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o passamos por todos os sistemas de coordenadas armazenados nas
         // matrizes the_model, the_view, e the_projection; e escrevemos na tela as matrizes e pontos resultantes dessas transformações.
@@ -1147,14 +1287,34 @@ double g_LastCursorPosX, g_LastCursorPosY;
 // Função callback chamada sempre que o usuário aperta algum dos botões do mouse
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
     {
-        // Se o usuário pressionou o botão esquerdo do mouse, guardamos a
+        // Se o usuário pressionou o botão direito do mouse, guardamos a
         // posição atual do cursor nas variáveis g_LastCursorPosX e
         // g_LastCursorPosY.  Também, setamos a variável
         // g_LeftMouseButtonPressed como true, para saber que o usuário está
         // com o botão esquerdo pressionado.
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+        g_RightMouseButtonPressed = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+    {
+        // Quando o usuário soltar o botão esquerdo do mouse, atualizamos a
+        // variável abaixo para false.
+        g_RightMouseButtonPressed = false;
+    }
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+    {
+        if(g_MiddleMouseButtonToggled == true){
+            g_MiddleMouseButtonToggled = false;
+            g_TargetLocked = false;
+        }
+        else{
+            g_MiddleMouseButtonToggled = true;
+        }
+    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
         g_LeftMouseButtonPressed = true;
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
@@ -1163,26 +1323,19 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         // variável abaixo para false.
         g_LeftMouseButtonPressed = false;
     }
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
-    {
-        if(g_MiddleMouseButtonPressed == true)
-            g_MiddleMouseButtonPressed = false;
-        else
-            g_MiddleMouseButtonPressed = true;
-    }
 }
 
 // Função callback chamada sempre que o usuário movimentar o cursor do mouse em
 // cima da janela OpenGL.
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
-    // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
+    // Abaixo executamos o seguinte: caso o botão direito do mouse esteja
     // pressionado, computamos quanto que o mouse se movimento desde o último
     // instante de tempo, e usamos esta movimentação para atualizar os
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    if (g_LeftMouseButtonPressed && !g_MiddleMouseButtonPressed)
+    if (g_RightMouseButtonPressed && !g_MiddleMouseButtonToggled)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
@@ -1193,8 +1346,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre 0 e +pi.
-        float phimax = PI;
-        float phimin = 0.1f;
+        float phimax = 29*PI/32;
+        float phimin = 3*PI/32;
 
         if (g_CameraPhi >= phimax)
             g_CameraPhi = phimax;
@@ -1321,6 +1474,16 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_D && action == GLFW_RELEASE)
         g_DKeyPressed = false;
 
+    if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+        g_QKeyPressed = true;
+    if (key == GLFW_KEY_Q && action == GLFW_RELEASE)
+        g_QKeyPressed = false;
+
+    if (key == GLFW_KEY_E && action == GLFW_PRESS)
+        g_EKeyPressed = true;
+    if (key == GLFW_KEY_E && action == GLFW_RELEASE)
+        g_EKeyPressed = false;
+
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
         g_SpaceKeyPressed = true;
     if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
@@ -1389,10 +1552,15 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
     glm::vec3 bbox_maxAsteroid = g_VirtualScene["asteroid"].bbox_max;
 
     // ------- Asteroide 1
-    glm::vec4 bbox_minFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x,g_AsteroidPos[0].y,g_AsteroidPos[0].z)
+    if(g_AsteroidVisible[0] == true){
+    glm::vec4 bbox_minFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x + g_BezierDisplacementX,
+                                                       g_AsteroidPos[0].y + g_BezierDisplacementY,
+                                                       g_AsteroidPos[0].z + g_BezierDisplacementZ)
                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
-    glm::vec4 bbox_maxFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x,g_AsteroidPos[0].y,g_AsteroidPos[0].z)
+    glm::vec4 bbox_maxFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x + g_BezierDisplacementX,
+                                                       g_AsteroidPos[0].y + g_BezierDisplacementY,
+                                                       g_AsteroidPos[0].z + g_BezierDisplacementZ)
                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
 
     if( cameraPosition.x >= bbox_minFirstAsteroid.x && cameraPosition.x <= bbox_maxFirstAsteroid.x &&
@@ -1408,8 +1576,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
             pushCamera = normalize(pushCamera) * 10.0f;
             cameraPosition = cameraPosition + pushCamera;
     }
+    }
 
     // ------- Asteroide 2
+    if(g_AsteroidVisible[1] == true){
     glm::vec4 bbox_minSecondAsteroid = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
                                      * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
@@ -1429,8 +1599,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
             pushCamera = normalize(pushCamera) * 10.0f;
             cameraPosition = cameraPosition + pushCamera;
     }
+    }
 
     // ------- Asteroide 3
+    if(g_AsteroidVisible[2] == true){
     glm::vec4 bbox_minThirdAsteroid = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
                                     * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
@@ -1450,8 +1622,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
             pushCamera = normalize(pushCamera) * 10.0f;
             cameraPosition = cameraPosition + pushCamera;
     }
+    }
 
     // ------- Asteroide 4
+    if(g_AsteroidVisible[3] == true){
     glm::vec4 bbox_minFourthAsteroid = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
                                     * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
@@ -1471,8 +1645,10 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
             pushCamera = normalize(pushCamera) * 10.0f;
             cameraPosition = cameraPosition + pushCamera;
     }
+    }
 
     // ------- Asteroide 5
+    if(g_AsteroidVisible[4] == true){
     glm::vec4 bbox_minFifthAsteroid = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
                                     * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
 
@@ -1492,8 +1668,89 @@ glm::vec4 checkIntersection(glm::vec4 cameraPosition) {
             pushCamera = normalize(pushCamera) * 10.0f;
             cameraPosition = cameraPosition + pushCamera;
     }
+    }
 
     return cameraPosition;
+}
+
+void bulletCollision(){
+// Impede que o usuário entre em qualquer um dos asteroides na cena
+    glm::vec3 bbox_minAsteroid = g_VirtualScene["asteroid"].bbox_min;
+    glm::vec3 bbox_maxAsteroid = g_VirtualScene["asteroid"].bbox_max;
+
+    // ------- Asteroide 1
+    if(g_AsteroidVisible[0] == true){
+    glm::vec4 bbox_minFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x + g_BezierDisplacementX,
+                                                       g_AsteroidPos[0].y + g_BezierDisplacementY,
+                                                       g_AsteroidPos[0].z + g_BezierDisplacementZ)
+                                    * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxFirstAsteroid = Matrix_Translate(g_AsteroidPos[0].x + g_BezierDisplacementX,
+                                                       g_AsteroidPos[0].y + g_BezierDisplacementY,
+                                                       g_AsteroidPos[0].z + g_BezierDisplacementZ)
+                                    * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( g_BulletPosition.x >= bbox_minFirstAsteroid.x && g_BulletPosition.x <= bbox_maxFirstAsteroid.x &&
+        g_BulletPosition.y >= bbox_minFirstAsteroid.y && g_BulletPosition.y <= bbox_maxFirstAsteroid.y &&
+        g_BulletPosition.z >= bbox_minFirstAsteroid.z && g_BulletPosition.z <= bbox_maxFirstAsteroid.z)
+        g_AsteroidVisible[0] = false;
+    }
+
+    // ------- Asteroide 2
+    if(g_AsteroidVisible[1] == true){
+    glm::vec4 bbox_minSecondAsteroid = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
+                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxSecondAsteroid = Matrix_Translate(g_AsteroidPos[1].x,g_AsteroidPos[1].y,g_AsteroidPos[1].z)
+                                     * Matrix_Scale(30.00f, 30.00f, 30.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( g_BulletPosition.x >= bbox_minSecondAsteroid.x && g_BulletPosition.x <= bbox_maxSecondAsteroid.x &&
+        g_BulletPosition.y >= bbox_minSecondAsteroid.y && g_BulletPosition.y <= bbox_maxSecondAsteroid.y &&
+        g_BulletPosition.z >= bbox_minSecondAsteroid.z && g_BulletPosition.z <= bbox_maxSecondAsteroid.z)
+        g_AsteroidVisible[1] = false;
+    }
+
+    // ------- Asteroide 3
+    if(g_AsteroidVisible[2] == true){
+    glm::vec4 bbox_minThirdAsteroid = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
+                                    * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxThirdAsteroid = Matrix_Translate(g_AsteroidPos[2].x,g_AsteroidPos[2].y,g_AsteroidPos[2].z)
+                                    * Matrix_Scale(35.00f, 20.00f, 35.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( g_BulletPosition.x >= bbox_minThirdAsteroid.x && g_BulletPosition.x <= bbox_maxThirdAsteroid.x &&
+        g_BulletPosition.y >= bbox_minThirdAsteroid.y && g_BulletPosition.y <= bbox_maxThirdAsteroid.y &&
+        g_BulletPosition.z >= bbox_minThirdAsteroid.z && g_BulletPosition.z <= bbox_maxThirdAsteroid.z)
+        g_AsteroidVisible[2] = false;
+    }
+
+    // ------- Asteroide 4
+    if(g_AsteroidVisible[3] == true){
+    glm::vec4 bbox_minFourthAsteroid = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
+                                    * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxFourthAsteroid = Matrix_Translate(g_AsteroidPos[3].x,g_AsteroidPos[3].y,g_AsteroidPos[3].z)
+                                    * Matrix_Scale(20.00f, 20.00f, 20.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( g_BulletPosition.x >= bbox_minFourthAsteroid.x && g_BulletPosition.x <= bbox_maxFourthAsteroid.x &&
+        g_BulletPosition.y >= bbox_minFourthAsteroid.y && g_BulletPosition.y <= bbox_maxFourthAsteroid.y &&
+        g_BulletPosition.z >= bbox_minFourthAsteroid.z && g_BulletPosition.z <= bbox_maxFourthAsteroid.z)
+        g_AsteroidVisible[3] = false;
+    }
+
+    // ------- Asteroide 5
+    if(g_AsteroidVisible[4] == true){
+    glm::vec4 bbox_minFifthAsteroid = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
+                                    * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_minAsteroid, 1.0f);
+
+    glm::vec4 bbox_maxFifthAsteroid = Matrix_Translate(g_AsteroidPos[4].x,g_AsteroidPos[4].y,g_AsteroidPos[4].z)
+                                    * Matrix_Scale(25.00f, 25.00f, 25.00f) * glm::vec4(bbox_maxAsteroid, 1.0f);
+
+    if( g_BulletPosition.x >= bbox_minFifthAsteroid.x && g_BulletPosition.x <= bbox_maxFifthAsteroid.x &&
+        g_BulletPosition.y >= bbox_minFifthAsteroid.y && g_BulletPosition.y <= bbox_maxFifthAsteroid.y &&
+        g_BulletPosition.z >= bbox_minFifthAsteroid.z && g_BulletPosition.z <= bbox_maxFifthAsteroid.z)
+        g_AsteroidVisible[4] = false;
+    }
 }
 
 // Esta função recebe um vértice com coordenadas de modelo p_model e passa o
