@@ -2,24 +2,19 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
-	<File name="include\utils.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="770" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="src\textrendering.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="7135" topLine="30" />
-		</Cursor>
-	</File>
 	<File name="src\glad.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="4158" topLine="173" />
 		</Cursor>
 	</File>
+	<File name="include\GLFW\glfw3.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="66139" topLine="1871" />
+		</Cursor>
+	</File>
 	<File name="src\shader_vertex.glsl" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="-1" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4094" topLine="0" />
+			<Cursor1 position="4698" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="include\KHR\khrplatform.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -27,36 +22,56 @@
 			<Cursor1 position="258" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include\matrices.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\utils.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="7337" topLine="235" />
+			<Cursor1 position="770" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="src\shader_fragment.glsl" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="-1" zoom_2="0">
+	<File name="src\textrendering.cpp" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5762" topLine="143" />
+			<Cursor1 position="2728" topLine="86" />
 		</Cursor>
 	</File>
 	<File name="src\main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="-1" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="55900" topLine="334" />
+			<Cursor1 position="15358" topLine="321" />
 		</Cursor>
 		<Folding>
-			<Collapse line="634" />
-			<Collapse line="686" />
-			<Collapse line="720" />
-			<Collapse line="761" />
-			<Collapse line="767" />
-			<Collapse line="782" />
-			<Collapse line="846" />
-			<Collapse line="990" />
-			<Collapse line="1004" />
-			<Collapse line="1019" />
-			<Collapse line="1089" />
-			<Collapse line="1141" />
-			<Collapse line="1165" />
-			<Collapse line="1233" />
-			<Collapse line="1251" />
+			<Collapse line="791" />
+			<Collapse line="843" />
+			<Collapse line="877" />
+			<Collapse line="920" />
+			<Collapse line="926" />
+			<Collapse line="941" />
+			<Collapse line="1005" />
+			<Collapse line="1149" />
+			<Collapse line="1163" />
+			<Collapse line="1178" />
+			<Collapse line="1248" />
+			<Collapse line="1300" />
+			<Collapse line="1324" />
+			<Collapse line="1369" />
+			<Collapse line="1408" />
+			<Collapse line="1816" />
+			<Collapse line="1870" />
+			<Collapse line="1884" />
+			<Collapse line="1900" />
+			<Collapse line="1937" />
 		</Folding>
+	</File>
+	<File name="include\matrices.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7314" topLine="226" />
+		</Cursor>
+	</File>
+	<File name="src\shader_fragment.glsl" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="-1" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1062" topLine="52" />
+		</Cursor>
+	</File>
+	<File name="include\glad\glad.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="136193" topLine="2910" />
+		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

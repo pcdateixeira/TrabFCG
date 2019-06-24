@@ -152,6 +152,7 @@ glm::vec4 g_AsteroidPos[5] = {
     glm::vec4(-130.0f,-150.0f,230.0f,1.0f)};
 int g_ClosestAsteroid = 0;
 bool g_AsteroidVisible[5] = {true, true, true, true, true};
+int g_AsteroidsDestroyed = 0;
 
 glm::dvec3 g_ControlPoints[4] = {
     //glm::dvec3(0.1,1.0,0.5),glm::dvec3(0.88,1.0,0.13),glm::dvec3(0.94,0.8,0.26),glm::dvec3(0.72,1.0,0.7)
@@ -165,9 +166,9 @@ double g_BezierDisplacementY = 0.0;
 double g_BezierDisplacementZ = 0.0;
 
 bool g_BulletVisible = false;
-glm::vec4 g_BulletOrigin;
-glm::vec4 g_BulletPosition;
-glm::vec4 g_BulletDirection;
+glm::vec4 g_BulletOrigin = glm::vec4(0.0f,0.0f,0.0f,1.0f);
+glm::vec4 g_BulletPosition = glm::vec4(0.0f,0.0f,0.0f,1.0f);
+glm::vec4 g_BulletDirection = glm::vec4(0.0f,0.0f,0.0f,0.0f);
 float g_BulletDistance = 0.0f;
 
 // Variáveis que definem onde a câmera está olhando em coordenadas esféricas, controladas pelo usuário através do mouse
@@ -191,6 +192,8 @@ bool g_UsePerspectiveProjection = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = false;
+
+double secondsSinceBeginning = glfwGetTime();
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -279,7 +282,9 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/Left_1K_TEX.png"); // TextureImage6
     LoadTextureImage("../../data/Right_1K_TEX.png"); // TextureImage7
     LoadTextureImage("../../data/2k_ceres_fictional.jpg"); // TextureImage8
-    LoadTextureImage("../../data/Tropical.png"); // TextureImage8
+    LoadTextureImage("../../data/Tropical.png"); // TextureImage9
+    LoadTextureImage("../../data/hello_screen.jpg"); // TextureImage10
+    LoadTextureImage("../../data/hello_screen2.jpg"); // TextureImage11
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -326,6 +331,11 @@ int main(int argc, char* argv[])
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
+        if(g_AsteroidVisible[0] == false && g_AsteroidVisible[1] == false && g_AsteroidVisible[2] == false
+        && g_AsteroidVisible[3] == false && g_AsteroidVisible[4] == false){
+            glfwSetWindowShouldClose(window, GL_TRUE);
+            printf("Parabens!!\n");
+        }
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é definida como coeficientes RGBA: Red, Green, Blue, Alpha
@@ -485,6 +495,8 @@ int main(int argc, char* argv[])
         #define TROPICAL 8
         #define ASTEROID 9
         #define BULLET 10
+        #define HELLO1 11
+        #define HELLO2 12
 
         // Desenhamos alguns asteroides
 
@@ -679,7 +691,7 @@ int main(int argc, char* argv[])
               * Matrix_Translate(direction.x/5, direction.y/5, direction.z/5) // Coloca a nave um pouco à frente da câmera
               * Matrix_Translate(g_CameraPosition.x, g_CameraPosition.y, g_CameraPosition.z) // Traz a nave para a posição da câmera
               * Matrix_Rotate(PI/2 - 1.1*g_CameraPhi, g_CameraRightVector)
-              * Matrix_Rotate(1.1*g_CameraTheta, g_CameraUpVector)
+              * Matrix_Rotate(1.001*g_CameraTheta, g_CameraUpVector)
               * Matrix_Scale(0.01f, 0.01f, 0.01f); // Reduz o tamanho do modelo da nave
 
         //oldViewVector = glm::vec4(0.0f, 0.0f, 3.5f, 0.0f);
@@ -719,6 +731,28 @@ int main(int argc, char* argv[])
         }
 
         bulletCollision(); // Checa se a bala atingiu algum dos asteroides em seu trajeto
+
+        PopMatrix(model); // Tiramos da pilha a matriz identidade guardada anteriormente
+        PushMatrix(model); // Guardamos matriz model atual na pilha
+
+        // Desenhamos a tela de boas vindas
+        double t = glfwGetTime();
+        if((t - secondsSinceBeginning) <= 7.0f){
+            model = Matrix_Translate(0.0f, 0.0f, 20.0f)
+                  * Matrix_Rotate_X(3*PI/2)
+                  * Matrix_Scale(0.025f, 0.00625f, 0.025f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, HELLO1);
+            DrawVirtualObject("plane");
+        }
+        if((t - secondsSinceBeginning) > 7.0f && (t - secondsSinceBeginning) <= 13.0f){
+            model = Matrix_Translate(0.0f, 0.0f, 20.0f)
+                  * Matrix_Rotate_X(3*PI/2)
+                  * Matrix_Scale(0.025f, 0.00625f, 0.025f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, HELLO2);
+            DrawVirtualObject("plane");
+        }
 
         // Pegamos um vértice com coordenadas de modelo (0.5, 0.5, 0.5, 1) e o passamos por todos os sistemas de coordenadas armazenados nas
         // matrizes the_model, the_view, e the_projection; e escrevemos na tela as matrizes e pontos resultantes dessas transformações.
@@ -877,6 +911,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(program_id, "TextureImage7"), 7);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage8"), 8);
     glUniform1i(glGetUniformLocation(program_id, "TextureImage9"), 9);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage10"), 10);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage11"), 11);
     glUseProgram(0);
 }
 
@@ -1287,6 +1323,8 @@ double g_LastCursorPosX, g_LastCursorPosY;
 // Função callback chamada sempre que o usuário aperta algum dos botões do mouse
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
+    double t = glfwGetTime();
+    if((t - secondsSinceBeginning) > 13.0f){
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
     {
         // Se o usuário pressionou o botão direito do mouse, guardamos a
@@ -1323,6 +1361,7 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         // variável abaixo para false.
         g_LeftMouseButtonPressed = false;
     }
+    }
 }
 
 // Função callback chamada sempre que o usuário movimentar o cursor do mouse em
@@ -1335,6 +1374,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
+    double t = glfwGetTime();
+    if((t - secondsSinceBeginning) > 13.0f){
     if (g_RightMouseButtonPressed && !g_MiddleMouseButtonToggled)
     {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
@@ -1358,6 +1399,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
+    }
     }
 
 }
@@ -1391,6 +1433,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             std::exit(100 + i);
     // ==============
 
+    double t = glfwGetTime();
+    if((t - secondsSinceBeginning) > 13.0f){
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -1493,6 +1537,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_LeftShiftKeyPressed = true;
     if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE)
         g_LeftShiftKeyPressed = false;
+    }
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
@@ -1694,6 +1739,7 @@ void bulletCollision(){
         g_BulletPosition.y >= bbox_minFirstAsteroid.y && g_BulletPosition.y <= bbox_maxFirstAsteroid.y &&
         g_BulletPosition.z >= bbox_minFirstAsteroid.z && g_BulletPosition.z <= bbox_maxFirstAsteroid.z)
         g_AsteroidVisible[0] = false;
+        g_AsteroidsDestroyed += 1;
     }
 
     // ------- Asteroide 2
@@ -1708,6 +1754,7 @@ void bulletCollision(){
         g_BulletPosition.y >= bbox_minSecondAsteroid.y && g_BulletPosition.y <= bbox_maxSecondAsteroid.y &&
         g_BulletPosition.z >= bbox_minSecondAsteroid.z && g_BulletPosition.z <= bbox_maxSecondAsteroid.z)
         g_AsteroidVisible[1] = false;
+        g_AsteroidsDestroyed += 1;
     }
 
     // ------- Asteroide 3
@@ -1722,6 +1769,7 @@ void bulletCollision(){
         g_BulletPosition.y >= bbox_minThirdAsteroid.y && g_BulletPosition.y <= bbox_maxThirdAsteroid.y &&
         g_BulletPosition.z >= bbox_minThirdAsteroid.z && g_BulletPosition.z <= bbox_maxThirdAsteroid.z)
         g_AsteroidVisible[2] = false;
+        g_AsteroidsDestroyed += 1;
     }
 
     // ------- Asteroide 4
@@ -1736,6 +1784,7 @@ void bulletCollision(){
         g_BulletPosition.y >= bbox_minFourthAsteroid.y && g_BulletPosition.y <= bbox_maxFourthAsteroid.y &&
         g_BulletPosition.z >= bbox_minFourthAsteroid.z && g_BulletPosition.z <= bbox_maxFourthAsteroid.z)
         g_AsteroidVisible[3] = false;
+        g_AsteroidsDestroyed += 1;
     }
 
     // ------- Asteroide 5
@@ -1750,6 +1799,7 @@ void bulletCollision(){
         g_BulletPosition.y >= bbox_minFifthAsteroid.y && g_BulletPosition.y <= bbox_maxFifthAsteroid.y &&
         g_BulletPosition.z >= bbox_minFifthAsteroid.z && g_BulletPosition.z <= bbox_maxFifthAsteroid.z)
         g_AsteroidVisible[4] = false;
+        g_AsteroidsDestroyed += 1;
     }
 }
 

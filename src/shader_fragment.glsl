@@ -33,6 +33,8 @@ uniform mat4 projection;
 #define TROPICAL 8
 #define ASTEROID 9
 #define BULLET 10
+#define HELLO1 11
+#define HELLO2 12
 
 uniform int object_id;
 
@@ -51,6 +53,8 @@ uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
 uniform sampler2D TextureImage9;
+uniform sampler2D TextureImage10;
+uniform sampler2D TextureImage11;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec3 color;
@@ -92,6 +96,16 @@ void main()
     }
     else if (object_id == ASTEROID) {
         color = color_v;
+    }
+    else if (object_id == HELLO1) {
+        U = texcoords.x;
+        V = texcoords.y;
+        color = texture(TextureImage10, vec2(U,V)).rgb;
+    }
+    else if (object_id == HELLO2) {
+        U = texcoords.x;
+        V = texcoords.y;
+        color = texture(TextureImage11, vec2(U,V)).rgb;
     }
     else {
 
@@ -172,9 +186,9 @@ void main()
         }
         else if ( object_id == BULLET )
         {
-            Kd = vec3(1.0,1.0,0.0);
-            Ks = vec3(1.0,1.0,0.0);
-            Ka = vec3(1.0,1.0,0.0);
+            Kd = vec3(0.8,0.8,0.8);
+            Ks = vec3(0.8,0.8,0.8);
+            Ka = vec3(0.8,0.8,0.8);
             q = 20.0;
         }
         else // Objeto desconhecido = branco
